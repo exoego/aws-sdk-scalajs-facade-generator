@@ -34,6 +34,14 @@ object FieldUtils {
       }
     }
 
+    /** Retrieve an int value by field name. */
+    def getInt(fieldName: String): Option[BigInt] = {
+      getFieldValue(fieldName) match {
+        case Some(JInt(value)) => Some(value)
+        case _ => None
+      }
+    }
+
     /** Retrieve a string value by field name. */
     def getString(fieldName: String): Option[String] = {
       getFieldValue(fieldName) match {
@@ -57,8 +65,16 @@ object FieldUtils {
         case _ => None
       }
     }
+
+    def getDocumentation(): Option[String] = {
+      getFieldValue("documentation") match {
+        case Some(JString(docs)) => Some(docs)
+        case _ => None
+      }
+    }
   }
 
+  /** Retrieve a single optional field. */
   def optField(name: String, opt: Option[_])(implicit formats: Formats): Option[JField] = {
     opt.map { value =>
       JField(name, Extraction.decompose(value))
@@ -69,7 +85,7 @@ object FieldUtils {
 object InputParser {
   import FieldUtils._
 
-  object Format extends CustomSerializer[Input](implicit format => ({
+  object Format extends CustomSerializer[Input](implicit fmt => ({
     case JObject(fields) => {
       val payload = fields.getString("payload")
       val apiType = JObject(fields).extract[AwsApiType]
@@ -111,7 +127,7 @@ object OutputParser {
           val JObject(baseFields) = Extraction.decompose(structure)
           JObject(baseFields :+ JField("members", JObject(Nil)))
         }
-        case other => Extraction.decompose(output.`type`)
+        case other => Extraction.decompose(other)
       }
 
       val resultWrapperField = optField("resultWrapper", output.resultWrapper)
@@ -138,117 +154,154 @@ object AwsApiTypeParser {
 
       value match {
         case JObject(fields) if (fields.hasShape) => {
-          val shape = fields.getString("shape").get
           val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
-          val queryName = fields.getString("queryName")
+          val xmlOrder = fields.getFieldValue("xmlOrder").map(_.extract[List[String]])
           ShapeType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            shape,
-            deprecated,
-            xmlNamespace,
-            queryName)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            shape = fields.getString("shape").get,
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
+            flattened = fields.getBoolean("flattened"),
+            deprecated = deprecated,
+            xmlNamespace = xmlNamespace,
+            xmlOrder = xmlOrder,
+            xmlAttribute = fields.getBoolean("xmlAttribute"),
+            queryName = fields.getString("queryName"),
+            streaming = fields.getBoolean("streaming"),
+            wrapper = fields.getBoolean("wrapper"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("map")) => {
-          val keyType = apply(fields.getFieldValue("key").get)
-          val valueType = apply(fields.getFieldValue("value").get)
+          val keyType = fields.getFieldValue("key").get.extract[AwsApiType]
+          val valueType = fields.getFieldValue("value").get.extract[AwsApiType]
           val flattened = fields.getBoolean("flattened")
 
           MapType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            keyType,
-            valueType,
-            flattened,
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            key = keyType,
+            value = valueType,
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            documentation = fields.getDocumentation(),
+            flattened = flattened,
+            deprecated = deprecated)
         }
 
-        case JObject(fields) if (fields.hasTypeValue("structure")) => {
+        case JObject(fields) if (fields.hasTypeValue("structure") && fields.exists(_._1 == "exception")) => {
           val required = fields.getFieldValue("required").map(_.extract[List[String]]).getOrElse(List())
+          val members = fields.getFieldValue("members").map(_.extract[Map[String, AwsApiType]])
+          val xmlOrder = fields.getFieldValue("xmlOrder").map(_.extract[List[String]])
+          val error = fields.getFieldValue("error").map(_.extract[ErrorInfo])
+          val exception = fields.getBoolean("exception").get
 
-          val members = fields.getFieldValue("members").map {
-            _ match {
-              case JObject(memberFields) => {
-                memberFields.map {
-                  case (fieldName, fieldValue) => fieldName -> apply(fieldValue)
-                }
-              }
-              case _ => throw new AssertionError("Unreachable if input is well-formed.")
-            }
-          }.getOrElse(List())
+          ErrorType(
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            error = error,
+            exception = exception,
+            fault = fields.getBoolean("fault"),
+            required = required,
+            members = members,
+            xmlOrder = xmlOrder,
+            documentation = fields.getDocumentation(),
+            deprecated = deprecated)
 
-          val sensitive = fields.getBoolean("sensitive")
+        }
+
+        case JObject(fields) if (fields.hasTypeValue("structure") && !fields.exists(_._1 == "error")) => {
+          val required = fields.getFieldValue("required").map(_.extract[List[String]]).getOrElse(List())
+          val members = fields.getFieldValue("members").map(_.extract[Map[String, AwsApiType]])
           val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
           val xmlOrder = fields.getFieldValue("xmlOrder").map(_.extract[List[String]])
-          
-          val wrapper = fields.getBoolean("wrapper")
 
           StructureType(
             location = fields.getLocation(),
             locationName = fields.getLocationName(),
             required = required,
-            members = Map(members: _*),
-            sensitive = sensitive,
+            members = members,
+            documentation = fields.getDocumentation(),
+            payload = fields.getString("payload"),
+            sensitive = fields.getBoolean("sensitive"),
             deprecated = deprecated,
             xmlNamespace = xmlNamespace,
             xmlOrder = xmlOrder,
-            wrapper = wrapper)
+            wrapper = fields.getBoolean("wrapper"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("list")) => {
           val flattened = fields.getBoolean("flattened")
 
           ListType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            apply(fields.getFieldValue("member").get),
-            flattened,
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            member = fields.getFieldValue("member").map(_.extract[AwsApiType]).get,
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            documentation = fields.getDocumentation(),
+            flattened = flattened,
+            deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("integer")) => {
           IntegerType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
+            deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("long")) => {
           LongType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
+            deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("float")) => {
           FloatType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
+            deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("double")) => {
           DoubleType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
+            deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("timestamp")) => {
           val timestampFormat = fields.getString("timestampFormat")
           TimestampType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            timestampFormat,
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            timestampFormat = timestampFormat,
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
+            deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("boolean")) => {
           BooleanType(
-            fields.getLocation(),
-            fields.getLocationName(),
-            deprecated)
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
+            deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("blob")) => {
@@ -258,8 +311,25 @@ object AwsApiTypeParser {
           BlobType(
             location = fields.getLocation(),
             locationName = fields.getLocationName(),
+            box = fields.getBoolean("box"),
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            documentation = fields.getDocumentation(),
             streaming = streaming,
             sensitive = sensitive,
+            deprecated = deprecated)
+        }
+
+        case JObject(fields) if (fields.hasTypeValue("string") && fields.exists(_._1 == "enum")) => {
+          val enumSymbols = fields.getFieldValue("enum").map(_.extract[List[String]]).get
+          EnumType(
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            box = fields.getBoolean("box"),
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            symbols = enumSymbols,
+            documentation = fields.getDocumentation(),
             deprecated = deprecated)
         }
 
@@ -271,6 +341,11 @@ object AwsApiTypeParser {
             location = fields.getLocation(),
             xmlAttribute = xmlAttribute,
             locationName = fields.getLocationName(),
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            pattern = fields.getString("pattern"),
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
             streaming = streaming,
             sensitive = sensitive,
             deprecated = deprecated)
@@ -284,6 +359,11 @@ object AwsApiTypeParser {
             location = fields.getLocation(),
             xmlAttribute = xmlAttribute,
             locationName = fields.getLocationName(),
+            min = fields.getInt("min"),
+            max = fields.getInt("max"),
+            pattern = fields.getString("pattern"),
+            box = fields.getBoolean("box"),
+            documentation = fields.getDocumentation(),
             streaming = streaming,
             sensitive = sensitive,
             deprecated = deprecated)
@@ -305,24 +385,73 @@ object AwsApiTypeParser {
     import FieldUtils._
 
     private implicit class AwsApiTypeImplicits(awsApiType: AwsApiType) {
-      def locationFields: List[JField] = {
-        List(optField("location", awsApiType.location), optField("locationName", awsApiType.locationName)).flatten
-      }
+      def defaultFields()(implicit formats: Formats): List[JField] = {
+        val baseFields = optField("location", awsApiType.location) ::
+          optField("locationName", awsApiType.locationName) ::
+          optField("documentation", awsApiType.documentation) ::
+          optField("deprecated", awsApiType.deprecated) ::
+          Nil
 
-      def deprecatedField: Option[JField] = optField("deprecated", awsApiType.deprecated)
+        val sizeFields = awsApiType match {
+          case sized: Sized => {
+            optField("min", sized.min) :: optField("max", sized.max) :: Nil
+          }
+          case _ => Nil
+        }
+
+        val primitiveFields = awsApiType match {
+          case primitive: AwsApiBoxedType => {
+            optField("box", primitive.box) ::
+              Nil
+          }
+          case _ => Nil
+        }
+
+        val stringFields = awsApiType match {
+          case string: StringType => {
+            optField("xmlAttribute", string.xmlAttribute) ::
+              optField("sensitive", string.sensitive) ::
+              optField("streaming", string.streaming) ::
+              optField("pattern", string.pattern) ::
+              Nil
+          }
+          case _ => Nil
+        }
+
+        (baseFields ++ sizeFields ++ primitiveFields ++ stringFields).flatten
+      }
     }
 
     override def apply(value: Any): JObject = value match {
       case list: ListType => {
         val flattenedField = optField("flattened", list.flattened)
-        val fields = List(JField("type", JString("list")), JField("member", apply(list.member))) ++ flattenedField
+        val fields = List(JField("type", JString("list")), JField("member", Extraction.decompose(list.member))) ++ flattenedField
 
-        JObject(list.locationFields ++ fields ++ list.deprecatedField)
+        JObject(list.defaultFields() ++ fields)
       }
       case map: MapType => {
         val flattenedField = optField("flattened", map.flattened)
-        val fields = List(JField("type", JString("map")), JField("key", apply(map.key)), JField("value", apply(map.value))) ++ flattenedField
-        JObject(map.locationFields ++ fields ++ map.deprecatedField)
+        val fields = List(JField("type", JString("map")), JField("key", Extraction.decompose(map.key)), JField("value", Extraction.decompose(map.value))) ++ flattenedField
+        JObject(map.defaultFields() ++ fields)
+      }
+      case error: ErrorType => {
+        val requiredField = if (error.required.isEmpty) {
+          List()
+        } else {
+          List(JField("required", JArray(error.required.map { fieldName => JString(fieldName) })))
+        }
+        val membersField = Some(JField("members", Extraction.decompose(error.members)))
+        val xmlOrderField = error.xmlOrder.map { xmlOrder => JField("xmlOrder", Extraction.decompose(xmlOrder)) }
+        val errorField = error.error.map { error =>
+          JField("error", Extraction.decompose(error))
+        }
+        val exceptionField = Some(JField("exception", Extraction.decompose(error.exception)))
+        val typeField = Some(JField("type", JString("structure")))
+        val faultField = optField("fault", error.fault)
+
+        val fields = (errorField :: exceptionField :: faultField :: typeField :: membersField :: xmlOrderField :: Nil).flatten
+
+        JObject(error.defaultFields() ++ fields ++ requiredField)
       }
       case structure: StructureType => {
         val requiredField = if (structure.required.isEmpty) {
@@ -331,78 +460,71 @@ object AwsApiTypeParser {
           List(JField("required", JArray(structure.required.map { fieldName => JString(fieldName) })))
         }
 
-        val membersField = if (structure.members.isEmpty) {
-          List()
-        } else {
-          val memberFields = structure.members.toList.map {
-            case (memberName, member) =>
-              JField(memberName, apply(member))
-          }
-
-          List(JField("members", JObject(memberFields)))
-        }
-
+        val membersField = optField("members", structure.members)
+        val payloadField = optField("payload", structure.payload)
         val sensitiveField = optField("sensitive", structure.sensitive)
         val xmlNamespaceField = optField("xmlNamespace", structure.xmlNamespace)
         val xmlOrderField = optField("xmlOrder", structure.xmlOrder)
         val wrapperField = optField("wrapper", structure.wrapper)
 
-        val fields = JField("type", JString("structure")) +: (requiredField ++ membersField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField)
-        JObject(structure.locationFields ++ fields ++ structure.deprecatedField ++ sensitiveField)
+        val fields = JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField)
+        JObject(structure.defaultFields() ++ fields)
       }
       case shape: ShapeType => {
-        val xmlNamespaceField = optField("xmlNamespace", shape.xmlNamespace)
-        val queryNameField = optField("queryName", shape.queryName)
+        val optFields = List(
+          optField("box", shape.box),
+          optField("xmlNamespace", shape.xmlNamespace),
+          optField("xmlOrder", shape.xmlOrder),
+          optField("xmlAttribute", shape.xmlAttribute),
+          optField("queryName", shape.queryName),
+          optField("flattened", shape.flattened),
+          optField("wrapper", shape.wrapper),
+          optField("streaming", shape.streaming)).flatten
 
-        JObject(shape.locationFields ++ List(JField("shape", JString(shape.shape))) ++ xmlNamespaceField ++ queryNameField ++ shape.deprecatedField)
+        val fields = JField("shape", JString(shape.shape)) +: optFields
+
+        JObject(shape.defaultFields() ++ fields)
       }
       case boolean: BooleanType => {
-        JObject(boolean.locationFields ++ List(JField("type", JString("boolean"))) ++ boolean.deprecatedField)
+        JObject(boolean.defaultFields() ++ List(JField("type", JString("boolean"))))
       }
       case integer: IntegerType => {
-        JObject(integer.locationFields ++ List(JField("type", JString("integer"))) ++ integer.deprecatedField)
+        JObject(integer.defaultFields() ++ List(JField("type", JString("integer"))))
       }
       case long: LongType => {
-        JObject(long.locationFields ++ List(JField("type", JString("long"))) ++ long.deprecatedField)
+        JObject(long.defaultFields() ++ List(JField("type", JString("long"))))
       }
       case float: FloatType => {
-        JObject(float.locationFields ++ List(JField("type", JString("float"))) ++ float.deprecatedField)
+        JObject(float.defaultFields() ++ List(JField("type", JString("float"))))
       }
       case double: DoubleType => {
-        JObject(double.locationFields ++ List(JField("type", JString("double"))) ++ double.deprecatedField)
+        JObject(double.defaultFields() ++ List(JField("type", JString("double"))))
       }
       case timestamp: TimestampType => {
         val timestampFormatField = optField("timestampFormat", timestamp.timestampFormat)
         val fields = List(JField("type", JString("timestamp"))) ++ timestampFormatField
-        JObject(timestamp.locationFields ++ fields ++ timestamp.deprecatedField)
+        JObject(timestamp.defaultFields() ++ fields)
       }
       case blob: BlobType => {
         val streamingField = optField("streaming", blob.streaming)
         val sensitiveField = optField("sensitive", blob.sensitive)
-        JObject(blob.locationFields ++ List(JField("type", JString("blob"))) ++ streamingField ++ sensitiveField ++ blob.deprecatedField)
+        JObject(blob.defaultFields() ++ List(JField("type", JString("blob"))) ++ streamingField ++ sensitiveField)
+      }
+      case enum: EnumType => {
+        val enumSymbols = enum.symbols.map { symbol =>
+          JString(symbol)
+        }
+        val enumField = JField("enum", JArray(enumSymbols))
+        val typeField = JField("type", JString("string"))
+
+        JObject(typeField :: enumField :: enum.defaultFields())
       }
       case string: ExplicitStringType => {
-        val typeField = Some(JField("type", JString("string")))
-        val xmlAttributeField = optField("xmlAttribute", string.xmlAttribute)
-        val sensitiveField = optField("sensitive", string.sensitive)
-        val streamingField = optField("streaming", string.streaming)
-
-        JObject(string.locationFields ++ List(typeField, xmlAttributeField, streamingField, sensitiveField).flatten ++ string.deprecatedField)
+        val typeField = JField("type", JString("string"))
+        JObject(typeField +: string.defaultFields())
       }
       case string: DefaultStringType => {
-        val xmlAttributeField = string.xmlAttribute.map { xmlAttribute =>
-          JField("xmlAttribute", JBool(xmlAttribute))
-        }
-
-        val sensitiveField = string.sensitive.map { sensitive =>
-          JField("sensitive", JBool(sensitive))
-        }
-
-        val streamingField = string.streaming.map { streaming =>
-          JField("streaming", JBool(streaming))
-        }
-
-        JObject(string.locationFields ++ List(xmlAttributeField, streamingField, sensitiveField).flatten ++ string.deprecatedField)
+        JObject(string.defaultFields())
       }
     }
 

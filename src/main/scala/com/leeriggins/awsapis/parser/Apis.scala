@@ -35,7 +35,7 @@ object Apis {
   def main(args: Array[String]): Unit = {
     implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
-    val text = json("sqs", "2012-11-05", ApiType.min)
+    val text = json("autoscaling", "2011-01-01", ApiType.normal)
     println(text)
     println()
 
@@ -58,6 +58,7 @@ object Apis {
     println("Removed:")
     println(pretty(render(removed)))
     println()
+
   }
 
 }

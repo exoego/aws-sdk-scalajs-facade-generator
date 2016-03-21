@@ -1,0 +1,324 @@
+package com.leeriggins.awsapis.gen
+
+import java.io.File
+import com.leeriggins.awsapis.models._
+import com.leeriggins.awsapis.models.AwsApiType._
+import com.leeriggins.awsapis.parser._
+import org.json4s.DefaultFormats
+
+class ScalaJsGen(
+    projectDir: File,
+    api: Api) {
+  val serviceName = cleanName(api.metadata.endpointPrefix.toLowerCase)
+  val sourceDir = new File(projectDir, "src/main/scala")
+  val packageDir = new File(sourceDir, s"facade/amazonaws/services/${serviceName}")
+
+  val packageName = s"facade.amazonaws.services.${serviceName}"
+  val header =
+    s"""package ${packageName}
+       |
+       |import scalajs._
+       |""".stripMargin
+
+  private def lower(str: String): String = {
+    str.head.toLower +: str.tail
+  }
+
+  private def upper(str: String): String = {
+    str.head.toUpper +: str.tail
+  }
+
+  def mkdirs(): Unit = {
+    packageDir.mkdirs()
+  }
+
+  def gen(): Unit = {
+    import java.io._
+
+    mkdirs()
+    val f = new File(packageDir, serviceName + ".scala")
+    f.createNewFile()
+
+    val writer = new PrintWriter(new FileWriter(f))
+    try {
+      val contents = genContents()
+      writer.println(contents)
+    } finally {
+      writer.close()
+    }
+  }
+
+  private def genContents(): String = {
+    val shapeTypeRefs = api.shapes.flatMap {
+      case (shapeName, shapeType) =>
+        genShapeTypeRef(shapeName, shapeType).map { typeRef =>
+          shapeName -> typeRef
+        }
+    }
+
+    val allTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
+      case (resolvedTypes, (shapeName, shapeType)) => {
+        genTypesRecursive(shapeName, shapeType, resolvedTypes)
+      }
+    }
+
+    s"""package facade.amazonaws.services
+       |
+       |import scalajs._
+       |import facade.amazonaws._
+       |
+       |package object ${serviceName} {
+       |${shapeTypeRefs.toIndexedSeq.sorted.map("  " + _._2).mkString("\n")}
+       |}
+       |
+       |package ${serviceName} {
+       |${serviceDefinition()}
+       |
+       |${allTypes.toIndexedSeq.sorted.map(_._2).mkString("\n\n").split('\n').map { line => if (line.length > 0) "  " + line else line }.mkString("\n")}
+       |}""".stripMargin
+  }
+
+  private def serviceDefinition(): String = {
+    val footer = "}"
+
+    val operations = api.operations.map {
+      case (opName, operation) =>
+        val outputType = operation.output.flatMap { output =>
+          className(output.`type`)
+        }.getOrElse("js.Object")
+
+        val parameters = operation.input.map { input =>
+          val inputName = className(input.`type`).get
+          s"params: ${inputName}"
+        }
+
+        val withCallback = IndexedSeq(
+          parameters,
+          Some(s"callback: Callback[${outputType}]")).flatten.mkString(", ")
+
+        s"""    def ${lower(opName)}(${withCallback}): Unit = js.native
+           |    def ${lower(opName)}(${parameters.getOrElse("")}): Request[${outputType}] = js.native"""
+    }
+
+    s"""  @js.native
+       |  trait ${upper(serviceName)} extends js.Object {
+       |${operations.toIndexedSeq.sorted.mkString("\n")}
+       |  }""".stripMargin
+  }
+
+  private def docsAndAnnotation(awsApiType: AwsApiType, isJsNative: Boolean = true): String = {
+    val doc = awsApiType.documentation.map { documentation =>
+      s"""/**
+         | * ${documentation}
+         | */""".stripMargin
+    }
+
+    val deprecation = awsApiType.deprecated.flatMap { dep =>
+      if (dep) Some("@deprecated") else None
+    }
+
+    val jsNative = if (isJsNative) Some("@js.native") else None
+
+    IndexedSeq(doc, deprecation, jsNative).flatten.mkString("\n")
+  }
+
+  private def className(awsApiType: AwsApiType): Option[String] = {
+    awsApiType match {
+      case _: StringType => Some("String")
+      case _: LongType => Some("Long")
+      case _: IntegerType => Some("Integer")
+      case _: FloatType => Some("Float")
+      case _: DoubleType => Some("Double")
+      case _: BooleanType => Some("Boolean")
+      case _: TimestampType => Some("js.Date")
+      case _: BlobType => Some("Array[Byte]")
+      case _: EnumType => Some("String")
+      case shape: ShapeType => Some(shape.shape)
+      case map: MapType => Some(s"js.Dictionary[${className(map.value).get}]")
+      case list: ListType => Some(s"js.Array[${className(list.member).get}]")
+      case _ => None
+    }
+  }
+
+  private def cleanName(name: String): String = {
+    if (name.exists { char =>
+      !char.isLetterOrDigit
+    } || !name.head.isLetter
+      || ScalaJsGen.scalaKeywords.contains(name)) {
+      "`" + name + "`"
+    } else {
+      name
+    }
+  }
+
+  private def genShapeTypeRef(shapeName: String, shapeType: AwsApiType): Option[String] = {
+    className(shapeType).flatMap { className =>
+      if (shapeName != className) {
+        Some(s"""type ${shapeName} = ${className}""")
+      } else {
+        None
+      }
+    }
+  }
+
+  /** Adds the new type recursively to the previously resolved types. */
+  private def genTypesRecursive(name: String, definition: AwsApiType, resolvedTypes: Map[String, String] = Map()): Map[String, String] = {
+    if (resolvedTypes.contains(name)) {
+      return resolvedTypes
+    }
+
+    val typeName = className(definition).getOrElse(name)
+
+    definition match {
+      case _: StringType |
+        _: LongType |
+        _: IntegerType |
+        _: FloatType |
+        _: DoubleType |
+        _: BooleanType |
+        _: TimestampType |
+        _: BlobType => {
+        // true primitive types require no recursive generation
+
+        resolvedTypes
+      }
+      case enum: EnumType => {
+        // enums are just strings in the AWS API
+
+        val symbolMap = enum.symbols.map { symbol =>
+          cleanName(symbol) -> symbol
+        }
+        val symbolDefinitions = symbolMap.map {
+          case (symbolName, symbol) =>
+            s"""  val ${symbolName} = "${symbol}""""
+        }
+
+        val valuesList = s"""  val values = IndexedSeq(${symbolMap.map(_._1).mkString(", ")})"""
+
+        val enumDefinition =
+          s"""${docsAndAnnotation(enum, isJsNative = false)}
+             |object ${name}Enum {
+             |${symbolDefinitions.mkString("\n")}
+             |
+             |${valuesList}
+             |}""".stripMargin
+
+        resolvedTypes + (name -> (enumDefinition))
+      }
+      case error: ErrorType => {
+        val withMemberTypes = error.members.map(_.foldLeft(resolvedTypes) {
+          case (types, (memberName, memberType)) =>
+            genTypesRecursive(memberName, memberType, types)
+        }).getOrElse(resolvedTypes)
+
+        val memberFields = error.members.map { members =>
+          members.map {
+            case (memberName, memberType) =>
+              s"""  var ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
+          }.mkString("\n")
+        }.getOrElse("")
+
+        val errorDefinition =
+          s"""${docsAndAnnotation(error)}
+             |trait ${typeName}Exception extends js.Object {
+             |${memberFields}
+             |}""".stripMargin.trim
+
+        withMemberTypes + (typeName -> errorDefinition)
+      }
+      case list: ListType => {
+        genTypesRecursive(name + "Item", list.member, resolvedTypes)
+      }
+      case map: MapType => {
+        val withKey = genTypesRecursive(name + "Key", map.key, resolvedTypes)
+        val withValue = genTypesRecursive(name + "Value", map.value, withKey)
+
+        withValue
+      }
+      case structure: StructureType => {
+        val withMemberTypes = structure.members.map(_.foldLeft(resolvedTypes) {
+          case (types, (memberName, memberType)) =>
+            genTypesRecursive(memberName, memberType, types)
+        }).getOrElse(resolvedTypes)
+
+        val memberFields = structure.members.map { members =>
+          members.map {
+            case (memberName, memberType) =>
+              s"""  var ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
+          }.mkString("\n")
+        }.getOrElse("")
+
+        val structureDefinition =
+          s"""${docsAndAnnotation(structure)}
+             |trait ${typeName} extends js.Object {
+             |${memberFields}
+             |}""".stripMargin.trim
+
+        withMemberTypes + (typeName -> structureDefinition)
+      }
+      case shape: ShapeType => {
+        resolvedTypes
+      }
+    }
+  }
+
+}
+
+object ScalaJsGen {
+  val scalaKeywords = Set(
+    "case",
+    "catch",
+    "class",
+    "def",
+    "do",
+    "else",
+    "extends",
+    "false",
+    "final",
+    "for",
+    "if",
+    "match",
+    "new",
+    "null",
+    "print",
+    "printf",
+    "println",
+    "private",
+    "protected",
+    "public",
+    "return",
+    "throw",
+    "trait",
+    "true",
+    "type",
+    "try",
+    "val",
+    "var",
+    "while",
+    "with")
+
+  def main(args: Array[String]): Unit = {
+    import Apis._
+    import org.json4s._
+    import org.json4s.Extraction._
+    import org.json4s.jackson.JsonMethods._
+    import java.io._
+
+    implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
+
+    val projectDir = new File("../scalajs-aws-test/")
+
+    val apiVersions = com.leeriggins.awsapis.Apis.versions
+
+    apiVersions.foreach {
+      case (name, version) =>
+        val text = json(name, version, ApiType.normal)
+        val parsedText = parse(text)
+
+        val api = parsedText.extract[Api]
+
+        val gen = new ScalaJsGen(projectDir, api)
+        gen.gen()
+    }
+  }
+}
