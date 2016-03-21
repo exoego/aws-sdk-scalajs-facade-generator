@@ -33,11 +33,9 @@ object Apis {
   }
 
   def main(args: Array[String]): Unit = {
-    import com.leeriggins.awsapis.gen._
+    implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
-    implicit val formats = DefaultFormats + AwsApiTypeSerDe
-
-    val text = json("autoscaling", "2011-01-01", ApiType.min)
+    val text = json("sqs", "2012-11-05", ApiType.min)
     println(text)
     println()
 

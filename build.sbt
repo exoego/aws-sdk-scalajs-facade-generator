@@ -8,5 +8,6 @@ lazy val root = (project in file(".")).
   
 libraryDependencies ++= Seq(
   "org.webjars.bower" % "aws-sdk-js" % "2.1.23",
-  "org.json4s" %% "json4s-jackson" % "3.3.0"
+  "org.json4s" %% "json4s-jackson" % "3.3.0",
+  "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 )
