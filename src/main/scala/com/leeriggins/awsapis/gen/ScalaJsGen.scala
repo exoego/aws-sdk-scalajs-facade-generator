@@ -332,7 +332,10 @@ object ScalaJsGen {
 
     implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
-    val projectDir = new File("../scalajs-aws-test/")
+    val projectDir = new File("../aws-sdk-scalajs-facade/")
+    if (!projectDir.exists()) {
+      projectDir.mkdirs()
+    }
 
     val apiVersions = com.leeriggins.awsapis.Apis.versions
 
