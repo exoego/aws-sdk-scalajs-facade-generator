@@ -131,7 +131,7 @@ class ScalaJsGen(
       case _: DoubleType => Some("Double")
       case _: BooleanType => Some("Boolean")
       case _: TimestampType => Some("js.Date")
-      case _: BlobType => Some("Array[Byte]")
+      case _: BlobType => Some("js.Array[Byte]")
       case _: EnumType => Some("String")
       case shape: ShapeType => Some(shape.shape)
       case map: MapType => Some(s"js.Dictionary[${className(map.value).get}]")
@@ -248,10 +248,36 @@ class ScalaJsGen(
           }.mkString("\n")
         }.getOrElse("")
 
+        val constructorArgs = structure.members.map { members =>
+          members.map {
+            case (memberName, memberType) =>
+              s"""    ${cleanName(memberName)}: js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"""
+          }.mkString(",\n")
+        }.getOrElse("")
+        
+        val fieldMapping = structure.members.map { members =>
+          members.map {
+            case (memberName, memberType) =>
+              s"""      ("${cleanName(memberName)}" -> ${cleanName(memberName)}.map { x => x: js.Any })"""
+          }.mkString(",\n")
+        }.getOrElse("")
+
         val structureDefinition =
           s"""${docsAndAnnotation(structure)}
              |trait ${typeName} extends js.Object {
              |${memberFields}
+             |}
+             |
+             |object ${typeName} {
+             |  def apply(
+             |${constructorArgs}
+             |  ): ${typeName} = {
+             |    val _fields = IndexedSeq[(String, js.Any)](
+             |${fieldMapping}
+             |    ).filter(_._2 != js.undefined)
+             |
+             |    js.Dynamic.literal.applyDynamicNamed("apply")(_fields: _*).asInstanceOf[${typeName}]
+             |  }
              |}""".stripMargin.trim
 
         withMemberTypes + (typeName -> structureDefinition)
