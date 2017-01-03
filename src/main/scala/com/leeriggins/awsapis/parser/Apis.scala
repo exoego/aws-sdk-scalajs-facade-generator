@@ -8,16 +8,14 @@ import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 
 object Apis {
-  val version = "2.1.23"
-  val path = s"META-INF/resources/webjars/aws-sdk-js/${version}/apis"
+  val path = s"aws-sdk-js/apis"
 
   def filename(service: String, date: String, apiType: ApiType): String = {
     s"${path}/${service}-${date}.${apiType}.json"
   }
 
   def json(service: String, date: String, apiType: ApiType): String = {
-    val inputStream = this.getClass.getClassLoader.getResourceAsStream(filename(service, date, apiType))
-    val source = io.Source.fromInputStream(inputStream)
+    val source = io.Source.fromFile(filename(service, date, apiType))
     try {
       source.mkString
     } finally {

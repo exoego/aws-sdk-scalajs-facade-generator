@@ -4,7 +4,7 @@ object Apis {
   val versions = IndexedSeq(
     "autoscaling" -> "2011-01-01",
     "cloudformation" -> "2010-05-15",
-    "cloudfront" -> "2014-11-06",
+    "cloudfront" -> "2016-11-25",
     "cloudhsm" -> "2014-05-30",
     "cloudsearch" -> "2013-01-01",
     "cloudsearchdomain" -> "2013-01-01",
@@ -16,7 +16,7 @@ object Apis {
     "datapipeline" -> "2012-10-29",
     "directconnect" -> "2012-10-25",
     "dynamodb" -> "2012-08-10",
-    "ec2" -> "2014-10-01",
+    "ec2" -> "2016-11-15",
     "ecs" -> "2014-11-13",
     "elasticache" -> "2015-02-02",
     "elasticbeanstalk" -> "2010-12-01",
