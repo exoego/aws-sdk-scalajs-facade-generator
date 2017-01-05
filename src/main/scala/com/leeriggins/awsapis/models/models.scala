@@ -8,7 +8,10 @@ case class Api(
   metadata: Metadata,
   documentation: Option[String],
   operations: Map[String, Operation],
-  shapes: Map[String, AwsApiType])
+  shapes: Map[String, AwsApiType],
+  examples: Option[Examples])
+
+case class Examples()
 
 case class Metadata(
   apiVersion: String,
@@ -23,7 +26,8 @@ case class Metadata(
   xmlNamespace: Option[String],
   targetPrefix: Option[String],
   timestampFormat: Option[String],
-  protocol: String)
+  protocol: String,
+  uid: Option[String])
 
 case class Operation(
   http: Option[Http],
@@ -34,7 +38,8 @@ case class Operation(
   documentationUrl: Option[String],
   deprecated: Option[Boolean],
   name: Option[String],
-  alias: Option[String])
+  alias: Option[String],
+  idempotent: Option[Boolean])
 
 case class Error(
   shape: String,
@@ -75,6 +80,7 @@ abstract sealed trait AwsApiType {
   val location: Option[String]
   val locationName: Option[String]
   val documentation: Option[String]
+  val sensitive: Option[Boolean]
   val deprecated: Option[Boolean]
 }
 
@@ -93,8 +99,8 @@ abstract sealed trait AwsApiBoxedType extends AwsApiType {
 abstract sealed trait StringType extends AwsApiBoxedType {
   val xmlAttribute: Option[Boolean]
   val streaming: Option[Boolean]
-  val sensitive: Option[Boolean]
   val pattern: Option[String]
+  val idempotencyToken: Option[Boolean]
 }
 
 object AwsApiType {
@@ -106,6 +112,7 @@ object AwsApiType {
     max: Option[BigInt],
     documentation: Option[String],
     flattened: Option[Boolean],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiType with Sized
 
   case class MapType(
@@ -117,6 +124,7 @@ object AwsApiType {
     max: Option[BigInt],
     documentation: Option[String],
     flattened: Option[Boolean],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiType with Sized
 
   case class StructureType(
@@ -143,6 +151,7 @@ object AwsApiType {
     exception: Boolean,
     fault: Option[Boolean],
     documentation: Option[String],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiType
 
   /** Describes a reference to a type defined in the service's shapes. */
@@ -159,7 +168,9 @@ object AwsApiType {
     xmlAttribute: Option[Boolean],
     queryName: Option[String],
     streaming: Option[Boolean],
-    wrapper: Option[Boolean]) extends AwsApiType
+    wrapper: Option[Boolean],
+    idempotencyToken: Option[Boolean],
+    sensitive: Option[Boolean]) extends AwsApiType
 
   case class IntegerType(
     location: Option[String],
@@ -168,6 +179,7 @@ object AwsApiType {
     max: Option[BigInt],
     box: Option[Boolean],
     documentation: Option[String],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiBoxedType with Sized
 
   case class LongType(
@@ -177,6 +189,7 @@ object AwsApiType {
     max: Option[BigInt],
     box: Option[Boolean],
     documentation: Option[String],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiBoxedType with Sized
 
   case class DoubleType(
@@ -184,13 +197,16 @@ object AwsApiType {
     locationName: Option[String],
     box: Option[Boolean],
     documentation: Option[String],
-    deprecated: Option[Boolean]) extends AwsApiBoxedType
+    sensitive: Option[Boolean],
+    deprecated: Option[Boolean],
+    min: Option[Double]) extends AwsApiBoxedType
 
   case class FloatType(
     location: Option[String],
     locationName: Option[String],
     box: Option[Boolean],
     documentation: Option[String],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiBoxedType
 
   case class TimestampType(
@@ -199,6 +215,7 @@ object AwsApiType {
     box: Option[Boolean],
     documentation: Option[String],
     timestampFormat: Option[String],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiBoxedType
 
   case class BooleanType(
@@ -206,6 +223,7 @@ object AwsApiType {
     locationName: Option[String],
     box: Option[Boolean],
     documentation: Option[String],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiBoxedType
 
   case class BlobType(
@@ -227,6 +245,7 @@ object AwsApiType {
     max: Option[BigInt],
     documentation: Option[String],
     symbols: List[String],
+    sensitive: Option[Boolean],
     deprecated: Option[Boolean]) extends AwsApiBoxedType with Sized
 
   case class DefaultStringType(
@@ -240,7 +259,8 @@ object AwsApiType {
     documentation: Option[String],
     streaming: Option[Boolean],
     sensitive: Option[Boolean],
-    deprecated: Option[Boolean]) extends StringType with Sized
+    deprecated: Option[Boolean],
+    idempotencyToken: Option[Boolean]) extends StringType with Sized
 
   case class ExplicitStringType(
     location: Option[String],
@@ -253,6 +273,7 @@ object AwsApiType {
     documentation: Option[String],
     streaming: Option[Boolean],
     sensitive: Option[Boolean],
-    deprecated: Option[Boolean]) extends StringType with Sized
+    deprecated: Option[Boolean],
+    idempotencyToken: Option[Boolean]) extends StringType with Sized
 
 }

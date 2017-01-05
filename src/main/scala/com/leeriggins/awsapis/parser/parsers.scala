@@ -42,6 +42,14 @@ object FieldUtils {
       }
     }
 
+    /** Retrieve a double value by field name. */
+    def getDouble(fieldName: String): Option[Double] = {
+      getFieldValue(fieldName) match {
+        case Some(JDouble(value)) => Some(value)
+        case _ => None
+      }
+    }
+
     /** Retrieve a string value by field name. */
     def getString(fieldName: String): Option[String] = {
       getFieldValue(fieldName) match {
@@ -152,6 +160,13 @@ object AwsApiTypeParser {
         case _ => None
       }
 
+      val sensitive = value match {
+        case JObject(fields) => {
+          fields.getBoolean("sensitive")
+        }
+        case _ => None
+      }
+
       value match {
         case JObject(fields) if (fields.hasShape) => {
           val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
@@ -169,7 +184,9 @@ object AwsApiTypeParser {
             xmlAttribute = fields.getBoolean("xmlAttribute"),
             queryName = fields.getString("queryName"),
             streaming = fields.getBoolean("streaming"),
-            wrapper = fields.getBoolean("wrapper"))
+            wrapper = fields.getBoolean("wrapper"),
+            sensitive = sensitive,
+            idempotencyToken = fields.getBoolean("idempotencyToken"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("map")) => {
@@ -186,6 +203,7 @@ object AwsApiTypeParser {
             max = fields.getInt("max"),
             documentation = fields.getDocumentation(),
             flattened = flattened,
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
@@ -206,6 +224,7 @@ object AwsApiTypeParser {
             members = members,
             xmlOrder = xmlOrder,
             documentation = fields.getDocumentation(),
+            sensitive = sensitive,
             deprecated = deprecated)
 
         }
@@ -223,7 +242,7 @@ object AwsApiTypeParser {
             members = members,
             documentation = fields.getDocumentation(),
             payload = fields.getString("payload"),
-            sensitive = fields.getBoolean("sensitive"),
+            sensitive = sensitive,
             deprecated = deprecated,
             xmlNamespace = xmlNamespace,
             xmlOrder = xmlOrder,
@@ -241,6 +260,7 @@ object AwsApiTypeParser {
             max = fields.getInt("max"),
             documentation = fields.getDocumentation(),
             flattened = flattened,
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
@@ -252,6 +272,7 @@ object AwsApiTypeParser {
             max = fields.getInt("max"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
@@ -263,6 +284,7 @@ object AwsApiTypeParser {
             max = fields.getInt("max"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
@@ -272,6 +294,7 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
@@ -281,7 +304,9 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
-            deprecated = deprecated)
+            sensitive = sensitive,
+            deprecated = deprecated,
+            min = fields.getDouble("min"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("timestamp")) => {
@@ -292,6 +317,7 @@ object AwsApiTypeParser {
             timestampFormat = timestampFormat,
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
@@ -301,12 +327,12 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("blob")) => {
           val streaming = fields.getBoolean("streaming")
-          val sensitive = fields.getBoolean("sensitive")
 
           BlobType(
             location = fields.getLocation(),
@@ -330,11 +356,11 @@ object AwsApiTypeParser {
             max = fields.getInt("max"),
             symbols = enumSymbols,
             documentation = fields.getDocumentation(),
+            sensitive = sensitive,
             deprecated = deprecated)
         }
 
         case JObject(fields) if (fields.hasTypeValue("string")) => {
-          val sensitive = fields.getBoolean("sensitive")
           val streaming = fields.getBoolean("streaming")
           val xmlAttribute = fields.getBoolean("xmlAttribute")
           ExplicitStringType(
@@ -348,11 +374,11 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             streaming = streaming,
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            idempotencyToken = fields.getBoolean("idempotencyToken"))
         }
 
         case JObject(fields) if (!fields.exists(_._1 == "type")) => {
-          val sensitive = fields.getBoolean("sensitive")
           val streaming = fields.getBoolean("streaming")
           val xmlAttribute = fields.getBoolean("xmlAttribute")
           DefaultStringType(
@@ -366,7 +392,8 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             streaming = streaming,
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            idempotencyToken = fields.getBoolean("idempotencyToken"))
         }
 
         case _ => {
@@ -389,6 +416,7 @@ object AwsApiTypeParser {
         val baseFields = optField("location", awsApiType.location) ::
           optField("locationName", awsApiType.locationName) ::
           optField("documentation", awsApiType.documentation) ::
+          optField("sensitive", awsApiType.sensitive) ::
           optField("deprecated", awsApiType.deprecated) ::
           Nil
 
@@ -410,9 +438,9 @@ object AwsApiTypeParser {
         val stringFields = awsApiType match {
           case string: StringType => {
             optField("xmlAttribute", string.xmlAttribute) ::
-              optField("sensitive", string.sensitive) ::
               optField("streaming", string.streaming) ::
               optField("pattern", string.pattern) ::
+              optField("idempotencyToken", string.idempotencyToken) ::
               Nil
           }
           case _ => Nil
@@ -479,7 +507,8 @@ object AwsApiTypeParser {
           optField("queryName", shape.queryName),
           optField("flattened", shape.flattened),
           optField("wrapper", shape.wrapper),
-          optField("streaming", shape.streaming)).flatten
+          optField("streaming", shape.streaming),
+          optField("idempotencyToken", shape.idempotencyToken)).flatten
 
         val fields = JField("shape", JString(shape.shape)) +: optFields
 
@@ -498,7 +527,8 @@ object AwsApiTypeParser {
         JObject(float.defaultFields() ++ List(JField("type", JString("float"))))
       }
       case double: DoubleType => {
-        JObject(double.defaultFields() ++ List(JField("type", JString("double"))))
+        val fields = JField("type", JString("double")) +: List(optField("min", double.min)).flatten
+        JObject(double.defaultFields() ++ fields)
       }
       case timestamp: TimestampType => {
         val timestampFormatField = optField("timestampFormat", timestamp.timestampFormat)
