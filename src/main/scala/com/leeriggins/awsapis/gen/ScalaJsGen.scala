@@ -10,6 +10,8 @@ class ScalaJsGen(
     projectDir: File,
     api: Api) {
   val serviceName = cleanName(api.metadata.endpointPrefix.toLowerCase)
+  val serviceAbbreviation = api.metadata.serviceAbbreviation.orElse(Some(api.metadata.serviceFullName)).map(_.replaceAll("Amazon ", "").replaceAll("AWS ", "").replaceAll(" ", ""))
+
   val sourceDir = new File(projectDir, "src/main/scala")
   val packageDir = new File(sourceDir, s"facade/amazonaws/services/${serviceName}")
 
@@ -19,6 +21,8 @@ class ScalaJsGen(
        |
        |import scalajs._
        |""".stripMargin
+
+  private val useCompanionObjectExtensions = Set("AttributeValue")
 
   private def lower(str: String): String = {
     str.head.toLower +: str.tail
@@ -65,6 +69,7 @@ class ScalaJsGen(
     s"""package facade.amazonaws.services
        |
        |import scalajs._
+       |import scalajs.js.annotation.JSImport
        |import facade.amazonaws._
        |
        |package object ${serviceName} {
@@ -95,13 +100,15 @@ class ScalaJsGen(
         val withCallback = IndexedSeq(
           parameters,
           Some(s"callback: Callback[${outputType}]")).flatten.mkString(", ")
+        s"""    def ${lower(opName)}(${parameters.getOrElse("")}): Request[${outputType}] = js.native"""
 
-        s"""    def ${lower(opName)}(${withCallback}): Unit = js.native
-           |    def ${lower(opName)}(${parameters.getOrElse("")}): Request[${outputType}] = js.native"""
+//        s"""    def ${lower(opName)}(${withCallback}): Unit = js.native
+//           |    def ${lower(opName)}(${parameters.getOrElse("")}): Request[${outputType}] = js.native"""
     }
 
     s"""  @js.native
-       |  trait ${upper(serviceName)} extends js.Object {
+       |  @JSImport("aws-sdk", "${serviceAbbreviation.getOrElse("<service class name unknown...>")}")
+       |  class ${upper(serviceName)}(config: facade.amazonaws.AWSConfig) extends js.Object {
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
   }
@@ -214,7 +221,7 @@ class ScalaJsGen(
         val memberFields = error.members.map { members =>
           members.map {
             case (memberName, memberType) =>
-              s"""  var ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
+              s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
           }.mkString("\n")
         }.getOrElse("")
 
@@ -244,7 +251,7 @@ class ScalaJsGen(
         val memberFields = structure.members.map { members =>
           members.map {
             case (memberName, memberType) =>
-              s"""  var ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
+              s"""  var ${cleanName(memberName)}: js.UndefOr[${className(memberType).getOrElse(memberName)}]"""
           }.mkString("\n")
         }.getOrElse("")
 
@@ -258,10 +265,15 @@ class ScalaJsGen(
         val fieldMapping = structure.members.map { members =>
           members.map {
             case (memberName, memberType) =>
-              s"""      ("${cleanName(memberName)}" -> ${cleanName(memberName)}.map { x => x: js.Any })"""
+              s"""      "${cleanName(memberName)}" -> ${cleanName(memberName)}.map { x => x: js.Any }"""
           }.mkString(",\n")
         }.getOrElse("")
 
+        val applyDeprecated = if (useCompanionObjectExtensions.contains(typeName)) {
+            s"""@deprecated("Use the extension methods by importing ${typeName}Extensions._ instead.")"""
+        } else {
+            ""
+        }
         val structureDefinition =
           s"""${docsAndAnnotation(structure)}
              |trait ${typeName} extends js.Object {
@@ -269,16 +281,18 @@ class ScalaJsGen(
              |}
              |
              |object ${typeName} {
+             |  ${applyDeprecated}
              |  def apply(
              |${constructorArgs}
              |  ): ${typeName} = {
              |    val _fields = IndexedSeq[(String, js.Any)](
              |${fieldMapping}
-             |    ).filter(_._2 != js.undefined)
+             |    ).filter(_._2 != (js.undefined : js.Any))
              |
              |    js.Dynamic.literal.applyDynamicNamed("apply")(_fields: _*).asInstanceOf[${typeName}]
              |  }
              |}""".stripMargin.trim
+
 
         withMemberTypes + (typeName -> structureDefinition)
       }

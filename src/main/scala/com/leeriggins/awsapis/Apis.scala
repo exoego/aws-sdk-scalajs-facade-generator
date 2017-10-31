@@ -3,6 +3,7 @@ package com.leeriggins.awsapis
 object Apis {
   val versions = IndexedSeq(
     "autoscaling" -> "2011-01-01",
+    "batch" -> "2016-08-10",
     "cloudformation" -> "2010-05-15",
     "cloudfront" -> "2016-11-25",
     "cloudhsm" -> "2014-05-30",
@@ -10,6 +11,7 @@ object Apis {
     "cloudsearchdomain" -> "2013-01-01",
     "cloudtrail" -> "2013-11-01",
     "codedeploy" -> "2014-10-06",
+    "cognito-idp" -> "2016-04-18",
     "cognito-identity" -> "2014-06-30",
     "cognito-sync" -> "2014-06-30",
     "config" -> "2014-11-12",
@@ -48,5 +50,7 @@ object Apis {
     "sts" -> "2011-06-15",
     "support" -> "2013-04-15",
     "swf" -> "2012-01-25",
-    "workspaces" -> "2015-04-08")
+    "states" -> "2016-11-23",
+    "workspaces" -> "2015-04-08"
+  )
 }
