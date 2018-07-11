@@ -1,12 +1,12 @@
-lazy val root = (project in file(".")).
+lazy val `aws-sdk-apis-parser` = (project in file(".")).
   settings(
     organization := "com.leeriggins",
     name := "aws-sdk-apis-parser",
     version := "0.0.1",
-    scalaVersion := "2.11.8"
+    scalaVersion := "2.12.7"
   )
   
 libraryDependencies ++= Seq(
-  "org.json4s" %% "json4s-jackson" % "3.3.0",
-  "org.scalatest" %% "scalatest" % "2.2.6" % "test"
+  "org.json4s" %% "json4s-jackson" % "3.6.2",
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
