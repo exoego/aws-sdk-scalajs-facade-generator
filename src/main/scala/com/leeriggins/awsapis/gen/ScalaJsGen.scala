@@ -130,7 +130,7 @@ class ScalaJsGen(
 
     s"""  @js.native
        |  @JSImport("aws-sdk", "${serviceAbbreviation2}")
-       |  class ${upper(serviceName)}(config: facade.amazonaws.AWSConfig) extends js.Object {
+       |  class ${className2}(config: facade.amazonaws.AWSConfig) extends js.Object {
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
   }
