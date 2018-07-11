@@ -308,8 +308,7 @@ class ScalaJsGen(
              |}
              |
              |object ${typeName} {
-             |  ${applyDeprecated}
-             |  def apply(
+             |  ${applyDeprecated} def apply(
              |${constructorArgs}
              |  ): ${typeName} = {
              |    val _fields = IndexedSeq[(String, js.Any)](
