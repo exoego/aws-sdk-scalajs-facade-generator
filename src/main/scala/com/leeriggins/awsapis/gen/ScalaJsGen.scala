@@ -154,7 +154,7 @@ class ScalaJsGen(
   private def className(awsApiType: AwsApiType): Option[String] = {
     awsApiType match {
       case _: StringType => Some("String")
-      case _: LongType => Some("Long")
+      case _: LongType => Some("Double")
       case _: IntegerType => Some("Integer")
       case _: FloatType => Some("Float")
       case _: DoubleType => Some("Double")
@@ -162,7 +162,12 @@ class ScalaJsGen(
       case _: TimestampType => Some("js.Date")
       case _: BlobType => Some("js.Array[Byte]")
       case _: EnumType => Some("String")
-      case shape: ShapeType => Some(shape.shape)
+      case shape: ShapeType =>
+        // FIXME
+        shape.shape match {
+          case "Long" => Some("Double")
+          case _ => Some(shape.shape)
+        }
       case map: MapType => Some(s"js.Dictionary[${className(map.value).get}]")
       case list: ListType => Some(s"js.Array[${className(list.member).get}]")
       case _ => None
