@@ -9,15 +9,32 @@ import org.json4s.DefaultFormats
 class ScalaJsGen(
     projectDir: File,
     api: Api) {
-  val serviceName = cleanName(api.metadata.endpointPrefix.toLowerCase)
+
+  private def kebab2camel(name : String): String = {
+    def loop(x : List[Char]): List[Char] = (x: @unchecked) match {
+      case '-' :: '-' :: rest => loop('-' :: rest)
+      case '-' :: c :: rest => Character.toUpperCase(c) :: loop(rest)
+      case '-' :: Nil => Nil
+      case c :: rest => c :: loop(rest)
+      case Nil => Nil
+    }
+    if (name == null)
+      ""
+    else
+      loop('-' :: name.toList).mkString
+  }
+
+  val rawServiceName: String = api.metadata.endpointPrefix.toLowerCase
+  val scalaServiceName: String = cleanName(rawServiceName.replaceAll("-","_"))
+  val serviceName = cleanName(kebab2camel(rawServiceName))
   val serviceAbbreviation = api.metadata.serviceAbbreviation.orElse(Some(api.metadata.serviceFullName)).map(_.replaceAll("Amazon ", "").replaceAll("AWS ", "").replaceAll(" ", ""))
 
   val sourceDir = new File(projectDir, "src/main/scala")
-  val packageDir = new File(sourceDir, s"facade/amazonaws/services/${serviceName}")
+  val packageDir = new File(sourceDir, s"facade/amazonaws/services/${scalaServiceName}")
 
-  val packageName = s"facade.amazonaws.services.${serviceName}"
+  val packageName = s"facade.amazonaws.services.${scalaServiceName}"
   val header =
-    s"""package ${packageName}
+    s"""package ${rawServiceName}
        |
        |import scalajs._
        |""".stripMargin
@@ -72,11 +89,11 @@ class ScalaJsGen(
        |import scalajs.js.annotation.JSImport
        |import facade.amazonaws._
        |
-       |package object ${serviceName} {
+       |package object ${scalaServiceName} {
        |${shapeTypeRefs.toIndexedSeq.sorted.map("  " + _._2).mkString("\n")}
        |}
        |
-       |package ${serviceName} {
+       |package ${scalaServiceName} {
        |${serviceDefinition()}
        |
        |${allTypes.toIndexedSeq.sorted.map(_._2).mkString("\n\n").split('\n').map { line => if (line.length > 0) "  " + line else line }.mkString("\n")}
@@ -106,8 +123,13 @@ class ScalaJsGen(
 //           |    def ${lower(opName)}(${parameters.getOrElse("")}): Request[${outputType}] = js.native"""
     }
 
+    val (serviceAbbreviation2, className2) = serviceAbbreviation match {
+      case Some(x) => (x, cleanName(x))
+      case None => ("<service class name unknown...>", upper(serviceName))
+    }
+
     s"""  @js.native
-       |  @JSImport("aws-sdk", "${serviceAbbreviation.getOrElse("<service class name unknown...>")}")
+       |  @JSImport("aws-sdk", "${serviceAbbreviation2}")
        |  class ${upper(serviceName)}(config: facade.amazonaws.AWSConfig) extends js.Object {
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
@@ -149,7 +171,7 @@ class ScalaJsGen(
 
   private def cleanName(name: String): String = {
     if (name.exists { char =>
-      !char.isLetterOrDigit
+      !char.isLetterOrDigit && char != '_'
     } || !name.head.isLetter
       || ScalaJsGen.scalaKeywords.contains(name)) {
       "`" + name + "`"
@@ -317,6 +339,7 @@ object ScalaJsGen {
     "final",
     "for",
     "if",
+    "implicit",
     "match",
     "new",
     "null",
