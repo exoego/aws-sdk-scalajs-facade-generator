@@ -155,7 +155,7 @@ class ScalaJsGen(
     awsApiType match {
       case _: StringType => Some("String")
       case _: LongType => Some("Double")
-      case _: IntegerType => Some("Integer")
+      case _: IntegerType => Some("Int")
       case _: FloatType => Some("Float")
       case _: DoubleType => Some("Double")
       case _: BooleanType => Some("Boolean")
