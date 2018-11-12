@@ -1,8 +1,8 @@
-# aws-sdk-scalajs-generator
+# aws-sdk-scalajs-facade-generator
 
 This is a fork of awesome https://github.com/balshor/aws-sdk-apis-parser 
 
-Intention of fork is to change generator behavior drastically.
+Intention of fork is to change ScalaJS facade generator drastically.
 
 
 ## Notes
