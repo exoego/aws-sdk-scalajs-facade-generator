@@ -1,8 +1,9 @@
-# aws-sdk-apis-parser
+# aws-sdk-scalajs-generator
 
-Parse the json files in the aws-sdk-js project into Scala.
+This is a fork of awesome https://github.com/balshor/aws-sdk-apis-parser 
 
-Why? I was curious to see if I could auto-gen some Scala.js wrappers.
+Intention of fork is to change generator behavior drastically.
+
 
 ## Notes
 

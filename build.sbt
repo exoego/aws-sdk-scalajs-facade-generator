@@ -1,7 +1,7 @@
-lazy val `aws-sdk-apis-parser` = (project in file(".")).
+lazy val `aws-sdk-scalajs-generator` = (project in file(".")).
   settings(
-    organization := "com.leeriggins",
-    name := "aws-sdk-apis-parser",
+    organization := "net.exoego",
+    name := "aws-sdk-scalajs-generator",
     version := "0.0.1",
     scalaVersion := "2.12.7"
   )
