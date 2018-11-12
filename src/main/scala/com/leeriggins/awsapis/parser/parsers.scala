@@ -3,6 +3,9 @@ package com.leeriggins.awsapis.parser
 import org.json4s._
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
+import com.leeriggins.awsapis.parser.Apis.ApiType.min
+
+import scala.util.Try
 
 object FieldUtils {
   /** Provides convience methods for retriving fields by name from a list of fields. */
@@ -53,6 +56,8 @@ object FieldUtils {
     /** Retrieve a string value by field name. */
     def getString(fieldName: String): Option[String] = {
       getFieldValue(fieldName) match {
+        case Some(JInt(value)) => Some(value.toString)
+        case Some(JDouble(value)) => Some(value.toString)
         case Some(JString(value)) => Some(value)
         case _ => None
       }
@@ -238,6 +243,8 @@ object AwsApiTypeParser {
           StructureType(
             location = fields.getLocation(),
             locationName = fields.getLocationName(),
+            event = fields.getBoolean("event"),
+            eventstream = fields.getBoolean("eventstream"),
             required = required,
             members = members,
             documentation = fields.getDocumentation(),
@@ -306,7 +313,8 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
             deprecated = deprecated,
-            min = fields.getDouble("min"))
+            max = fields.getString("max"),
+            min = fields.getString("min"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("timestamp")) => {
@@ -494,8 +502,10 @@ object AwsApiTypeParser {
         val xmlNamespaceField = optField("xmlNamespace", structure.xmlNamespace)
         val xmlOrderField = optField("xmlOrder", structure.xmlOrder)
         val wrapperField = optField("wrapper", structure.wrapper)
+        val eventField = optField("event", structure.event)
+        val eventstreamField = optField("eventstream", structure.eventstream)
 
-        val fields = JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField)
+        val fields = JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField)
         JObject(structure.defaultFields() ++ fields)
       }
       case shape: ShapeType => {
@@ -527,7 +537,20 @@ object AwsApiTypeParser {
         JObject(float.defaultFields() ++ List(JField("type", JString("float"))))
       }
       case double: DoubleType => {
-        val fields = JField("type", JString("double")) +: List(optField("min", double.min)).flatten
+        def toNumber(d: String): AnyVal = {
+          if (d == "0.0") {
+            0.0
+          } else {
+            Try(d.toInt) match {
+              case scala.util.Success(value) => value
+              case _ => d.toDouble
+            }
+          }
+        }
+        val optFields = List(
+          optField("max", double.max.map(toNumber)),
+          optField("min", double.min.map(toNumber))).flatten
+        val fields = JField("type", JString("double")) +: optFields
         JObject(double.defaultFields() ++ fields)
       }
       case timestamp: TimestampType => {

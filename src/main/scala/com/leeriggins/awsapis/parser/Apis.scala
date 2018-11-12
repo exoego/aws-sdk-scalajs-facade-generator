@@ -15,7 +15,7 @@ object Apis {
   }
 
   def json(service: String, date: String, apiType: ApiType): String = {
-    val source = io.Source.fromFile(filename(service, date, apiType))
+    val source = io.Source.fromFile(filename(service, date, apiType), "UTF-8")
     try {
       source.mkString
     } finally {

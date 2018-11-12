@@ -21,13 +21,18 @@ case class Metadata(
   jsonVersion: Option[String],
   serviceAbbreviation: Option[String],
   serviceFullName: String,
+  serviceId: String,
   signingName: Option[String],
   signatureVersion: String,
   xmlNamespace: Option[String],
   targetPrefix: Option[String],
   timestampFormat: Option[String],
   protocol: String,
+  protocolSettings: Option[ProtocolSettings],
   uid: Option[String])
+
+case class ProtocolSettings(
+  h2: String)
 
 case class Operation(
   http: Option[Http],
@@ -130,6 +135,8 @@ object AwsApiType {
   case class StructureType(
     location: Option[String],
     locationName: Option[String],
+    event: Option[Boolean],
+    eventstream: Option[Boolean],
     required: List[String] = List(),
     members: Option[Map[String, AwsApiType]],
     documentation: Option[String],
@@ -199,7 +206,8 @@ object AwsApiType {
     documentation: Option[String],
     sensitive: Option[Boolean],
     deprecated: Option[Boolean],
-    min: Option[Double]) extends AwsApiBoxedType
+    max: Option[String],
+    min: Option[String]) extends AwsApiBoxedType
 
   case class FloatType(
     location: Option[String],
