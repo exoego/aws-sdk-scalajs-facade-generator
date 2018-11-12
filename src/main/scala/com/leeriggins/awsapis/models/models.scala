@@ -1,5 +1,6 @@
 package com.leeriggins.awsapis.models
 
+import com.leeriggins.awsapis.parser.Apis.ApiType.min
 import org.json4s._
 
 /** The API for a single AWS service like AutoScaling or EC2. */
@@ -39,6 +40,9 @@ case class Operation(
   input: Option[Input],
   output: Option[Output],
   errors: Option[List[Error]],
+  authtype: Option[String],
+  endpointdiscovery: Option[Map[String,AwsApiType]],
+  endpointoperation: Option[Boolean],
   documentation: Option[String],
   documentationUrl: Option[String],
   deprecated: Option[Boolean],
@@ -137,6 +141,7 @@ object AwsApiType {
     locationName: Option[String],
     event: Option[Boolean],
     eventstream: Option[Boolean],
+    eventpayload: Option[Boolean],
     required: List[String] = List(),
     members: Option[Map[String, AwsApiType]],
     documentation: Option[String],
@@ -166,6 +171,7 @@ object AwsApiType {
     location: Option[String],
     locationName: Option[String],
     shape: String,
+    eventpayload: Option[Boolean],
     box: Option[Boolean],
     documentation: Option[String],
     flattened: Option[Boolean],
@@ -237,6 +243,7 @@ object AwsApiType {
   case class BlobType(
     location: Option[String],
     locationName: Option[String],
+    eventpayload: Option[Boolean],
     box: Option[Boolean],
     min: Option[BigInt],
     max: Option[BigInt],

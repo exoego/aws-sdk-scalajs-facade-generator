@@ -180,6 +180,7 @@ object AwsApiTypeParser {
             location = fields.getLocation(),
             locationName = fields.getLocationName(),
             shape = fields.getString("shape").get,
+            eventpayload = fields.getBoolean("eventpayload"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
             flattened = fields.getBoolean("flattened"),
@@ -245,6 +246,7 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             event = fields.getBoolean("event"),
             eventstream = fields.getBoolean("eventstream"),
+            eventpayload = fields.getBoolean("eventpayload"),
             required = required,
             members = members,
             documentation = fields.getDocumentation(),
@@ -345,6 +347,7 @@ object AwsApiTypeParser {
           BlobType(
             location = fields.getLocation(),
             locationName = fields.getLocationName(),
+            eventpayload = fields.getBoolean("eventpayload"),
             box = fields.getBoolean("box"),
             min = fields.getInt("min"),
             max = fields.getInt("max"),
@@ -504,13 +507,15 @@ object AwsApiTypeParser {
         val wrapperField = optField("wrapper", structure.wrapper)
         val eventField = optField("event", structure.event)
         val eventstreamField = optField("eventstream", structure.eventstream)
+        val eventpayloadField = optField("eventpayload", structure.eventpayload)
 
-        val fields = JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField)
+        val fields = JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField ++ eventpayloadField)
         JObject(structure.defaultFields() ++ fields)
       }
       case shape: ShapeType => {
         val optFields = List(
           optField("box", shape.box),
+          optField("eventpayload", shape.eventpayload),
           optField("xmlNamespace", shape.xmlNamespace),
           optField("xmlOrder", shape.xmlOrder),
           optField("xmlAttribute", shape.xmlAttribute),
@@ -561,7 +566,8 @@ object AwsApiTypeParser {
       case blob: BlobType => {
         val streamingField = optField("streaming", blob.streaming)
         val sensitiveField = optField("sensitive", blob.sensitive)
-        JObject(blob.defaultFields() ++ List(JField("type", JString("blob"))) ++ streamingField ++ sensitiveField)
+        val eventpayloadField = optField("eventpayload", blob.eventpayload)
+        JObject(blob.defaultFields() ++ List(JField("type", JString("blob"))) ++ streamingField ++ sensitiveField ++ eventpayloadField)
       }
       case enum: EnumType => {
         val enumSymbols = enum.symbols.map { symbol =>
