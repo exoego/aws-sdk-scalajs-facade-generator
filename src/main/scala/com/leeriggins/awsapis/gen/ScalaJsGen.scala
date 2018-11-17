@@ -87,6 +87,8 @@ class ScalaJsGen(
        |
        |import scalajs._
        |import scalajs.js.annotation.JSImport
+       |import scala.scalajs.js.|
+       |import io.scalajs.nodejs
        |import facade.amazonaws._
        |
        |package object ${scalaServiceName} {
@@ -160,7 +162,7 @@ class ScalaJsGen(
       case _: DoubleType => Some("Double")
       case _: BooleanType => Some("Boolean")
       case _: TimestampType => Some("js.Date")
-      case _: BlobType => Some("js.Array[Byte]")
+      case _: BlobType => Some("nodejs.buffer.Buffer | nodejs.stream.Readable | js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
       case _: EnumType => Some("String")
       case shape: ShapeType =>
         // FIXME
@@ -292,7 +294,7 @@ class ScalaJsGen(
         val fieldMapping = structure.members.map { members =>
           members.map {
             case (memberName, memberType) =>
-              s"""      "${cleanName(memberName)}" -> ${cleanName(memberName)}.map { x => x: js.Any }"""
+              s"""      "${cleanName(memberName)}" -> ${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"""
           }.mkString(",\n")
         }.getOrElse("")
 
