@@ -185,12 +185,14 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             flattened = fields.getBoolean("flattened"),
             deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"),
             xmlNamespace = xmlNamespace,
             xmlOrder = xmlOrder,
             xmlAttribute = fields.getBoolean("xmlAttribute"),
             queryName = fields.getString("queryName"),
             streaming = fields.getBoolean("streaming"),
             wrapper = fields.getBoolean("wrapper"),
+            jsonvalue = fields.getBoolean("jsonvalue"),
             sensitive = sensitive,
             idempotencyToken = fields.getBoolean("idempotencyToken"))
         }
@@ -210,7 +212,8 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             flattened = flattened,
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("structure") && fields.exists(_._1 == "exception")) => {
@@ -231,12 +234,13 @@ object AwsApiTypeParser {
             xmlOrder = xmlOrder,
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
 
         }
 
         case JObject(fields) if (fields.hasTypeValue("structure") && !fields.exists(_._1 == "error")) => {
-          val required = fields.getFieldValue("required").map(_.extract[List[String]]).getOrElse(List())
+          val required = fields.getFieldValue("required").map(_.extract[List[String]])
           val members = fields.getFieldValue("members").map(_.extract[Map[String, AwsApiType]])
           val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
           val xmlOrder = fields.getFieldValue("xmlOrder").map(_.extract[List[String]])
@@ -253,6 +257,7 @@ object AwsApiTypeParser {
             payload = fields.getString("payload"),
             sensitive = sensitive,
             deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"),
             xmlNamespace = xmlNamespace,
             xmlOrder = xmlOrder,
             wrapper = fields.getBoolean("wrapper"))
@@ -270,7 +275,8 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             flattened = flattened,
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("integer")) => {
@@ -282,7 +288,8 @@ object AwsApiTypeParser {
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("long")) => {
@@ -294,7 +301,8 @@ object AwsApiTypeParser {
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("float")) => {
@@ -304,7 +312,10 @@ object AwsApiTypeParser {
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"),
+            max = fields.getString("max"),
+            min = fields.getString("min"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("double")) => {
@@ -315,6 +326,7 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
             deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"),
             max = fields.getString("max"),
             min = fields.getString("min"))
         }
@@ -328,7 +340,8 @@ object AwsApiTypeParser {
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("boolean")) => {
@@ -338,7 +351,8 @@ object AwsApiTypeParser {
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("blob")) => {
@@ -354,7 +368,8 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             streaming = streaming,
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("string") && fields.exists(_._1 == "enum")) => {
@@ -365,10 +380,12 @@ object AwsApiTypeParser {
             box = fields.getBoolean("box"),
             min = fields.getInt("min"),
             max = fields.getInt("max"),
+            pattern = fields.getString("pattern"),
             symbols = enumSymbols,
             documentation = fields.getDocumentation(),
             sensitive = sensitive,
-            deprecated = deprecated)
+            deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"))
         }
 
         case JObject(fields) if (fields.hasTypeValue("string")) => {
@@ -386,6 +403,8 @@ object AwsApiTypeParser {
             streaming = streaming,
             sensitive = sensitive,
             deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"),
+            jsonvalue = fields.getBoolean("jsonvalue"),
             idempotencyToken = fields.getBoolean("idempotencyToken"))
         }
 
@@ -404,6 +423,8 @@ object AwsApiTypeParser {
             streaming = streaming,
             sensitive = sensitive,
             deprecated = deprecated,
+            deprecatedMessage = fields.getString("deprecatedMessage"),
+            jsonvalue = fields.getBoolean("jsonvalue"),
             idempotencyToken = fields.getBoolean("idempotencyToken"))
         }
 
@@ -422,6 +443,17 @@ object AwsApiTypeParser {
   class Serializer(implicit formats: Formats) extends PartialFunction[Any, JObject] {
     import FieldUtils._
 
+    private def toNumber(d: String): AnyVal = {
+      if (d == "0.0") {
+        0.0
+      } else {
+        Try(d.toInt) match {
+          case scala.util.Success(value) => value
+          case _ => d.toDouble
+        }
+      }
+    }
+
     private implicit class AwsApiTypeImplicits(awsApiType: AwsApiType) {
       def defaultFields()(implicit formats: Formats): List[JField] = {
         val baseFields = optField("location", awsApiType.location) ::
@@ -429,6 +461,7 @@ object AwsApiTypeParser {
           optField("documentation", awsApiType.documentation) ::
           optField("sensitive", awsApiType.sensitive) ::
           optField("deprecated", awsApiType.deprecated) ::
+          optField("deprecatedMessage", awsApiType.deprecatedMessage) ::
           Nil
 
         val sizeFields = awsApiType match {
@@ -452,6 +485,11 @@ object AwsApiTypeParser {
               optField("streaming", string.streaming) ::
               optField("pattern", string.pattern) ::
               optField("idempotencyToken", string.idempotencyToken) ::
+              optField("jsonvalue", string.jsonvalue) ::
+              Nil
+          }
+          case enum: EnumType => {
+            optField("pattern", enum.pattern) ::
               Nil
           }
           case _ => Nil
@@ -493,10 +531,9 @@ object AwsApiTypeParser {
         JObject(error.defaultFields() ++ fields ++ requiredField)
       }
       case structure: StructureType => {
-        val requiredField = if (structure.required.isEmpty) {
-          List()
-        } else {
-          List(JField("required", JArray(structure.required.map { fieldName => JString(fieldName) })))
+        val requiredField = structure.required match {
+          case None       => List()
+          case Some(list) => List(JField("required", JArray(list.map { fieldName => JString(fieldName) })))
         }
 
         val membersField = optField("members", structure.members)
@@ -523,6 +560,7 @@ object AwsApiTypeParser {
           optField("flattened", shape.flattened),
           optField("wrapper", shape.wrapper),
           optField("streaming", shape.streaming),
+          optField("jsonvalue", shape.jsonvalue),
           optField("idempotencyToken", shape.idempotencyToken)).flatten
 
         val fields = JField("shape", JString(shape.shape)) +: optFields
@@ -539,19 +577,13 @@ object AwsApiTypeParser {
         JObject(long.defaultFields() ++ List(JField("type", JString("long"))))
       }
       case float: FloatType => {
-        JObject(float.defaultFields() ++ List(JField("type", JString("float"))))
+        val optFields = List(
+          optField("max", float.max.map(toNumber)),
+          optField("min", float.min.map(toNumber))).flatten
+        val fields = JField("type", JString("float")) +: optFields
+        JObject(float.defaultFields() ++ fields)
       }
       case double: DoubleType => {
-        def toNumber(d: String): AnyVal = {
-          if (d == "0.0") {
-            0.0
-          } else {
-            Try(d.toInt) match {
-              case scala.util.Success(value) => value
-              case _ => d.toDouble
-            }
-          }
-        }
         val optFields = List(
           optField("max", double.max.map(toNumber)),
           optField("min", double.min.map(toNumber))).flatten
