@@ -24,16 +24,25 @@ class ScalaJsGen(
       loop('-' :: name.toList).mkString
   }
 
-  val rawServiceName: String = api.metadata.endpointPrefix.toLowerCase
-  val scalaServiceName: String = cleanName(rawServiceName.replaceAll("-","_"))
-  val serviceName = cleanName(kebab2camel(rawServiceName))
-  val serviceAbbreviation = api.metadata.serviceAbbreviation.orElse(Some(api.metadata.serviceFullName)).map(_.replaceAll("Amazon ", "").replaceAll("AWS ", "").replaceAll(" ", ""))
+  private val rawServiceName: String = api.metadata.endpointPrefix.toLowerCase
+  private val scalaServiceName: String = cleanName(rawServiceName.replaceAll("-","_"))
+  private val serviceName = cleanName(kebab2camel(rawServiceName))
+  private val serviceClassName = api.metadata.serviceId.replaceAll(" ", "") match {
+    // special treatment
+    case "SFN" => "StepFunctions"
+    case "ElasticLoadBalancing" => "ELB"
+    case otherwise => otherwise
+  }
+  private val sdkClassName = serviceClassName match {
+    case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
+    case otherwise => otherwise
+  }
 
   val sourceDir = new File(projectDir, "src/main/scala")
   val packageDir = new File(sourceDir, s"facade/amazonaws/services/${scalaServiceName}")
 
-  val packageName = s"facade.amazonaws.services.${scalaServiceName}"
-  val header =
+  private val packageName = s"facade.amazonaws.services.${scalaServiceName}"
+  private val header =
     s"""package ${rawServiceName}
        |
        |import scalajs._
@@ -41,11 +50,11 @@ class ScalaJsGen(
 
   private val useCompanionObjectExtensions = Set("AttributeValue")
 
-  private def lower(str: String): String = {
+  private def lowerFirst(str: String): String = {
     str.head.toLower +: str.tail
   }
 
-  private def upper(str: String): String = {
+  private def upperFirst(str: String): String = {
     str.head.toUpper +: str.tail
   }
 
@@ -114,17 +123,12 @@ class ScalaJsGen(
           s"params: ${inputName}"
         }
 
-        s"""    def ${lower(opName)}(${parameters}): Request[${outputType}] = js.native"""
-    }
-
-    val (serviceAbbreviation2, className2) = serviceAbbreviation match {
-      case Some(x) => (x, cleanName(x))
-      case None => ("<service class name unknown...>", upper(serviceName))
+        s"""    def ${lowerFirst(opName)}(${parameters}): Request[${outputType}] = js.native"""
     }
 
     s"""  @js.native
-       |  @JSImport("aws-sdk", "${serviceAbbreviation2}")
-       |  class ${className2}(config: facade.amazonaws.AWSConfig) extends js.Object {
+       |  @JSImport("aws-sdk", "${sdkClassName}")
+       |  class ${serviceClassName}(config: facade.amazonaws.AWSConfig) extends js.Object {
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
   }
