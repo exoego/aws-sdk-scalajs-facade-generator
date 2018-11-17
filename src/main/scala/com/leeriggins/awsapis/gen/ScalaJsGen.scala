@@ -103,26 +103,18 @@ class ScalaJsGen(
   }
 
   private def serviceDefinition(): String = {
-    val footer = "}"
-
     val operations = api.operations.map {
       case (opName, operation) =>
         val outputType = operation.output.flatMap { output =>
           className(output.`type`)
         }.getOrElse("js.Object")
 
-        val parameters = operation.input.map { input =>
+        val parameters = operation.input.fold("") { input =>
           val inputName = className(input.`type`).get
           s"params: ${inputName}"
         }
 
-        val withCallback = IndexedSeq(
-          parameters,
-          Some(s"callback: Callback[${outputType}]")).flatten.mkString(", ")
-        s"""    def ${lower(opName)}(${parameters.getOrElse("")}): Request[${outputType}] = js.native"""
-
-//        s"""    def ${lower(opName)}(${withCallback}): Unit = js.native
-//           |    def ${lower(opName)}(${parameters.getOrElse("")}): Request[${outputType}] = js.native"""
+        s"""    def ${lower(opName)}(${parameters}): Request[${outputType}] = js.native"""
     }
 
     val (serviceAbbreviation2, className2) = serviceAbbreviation match {
