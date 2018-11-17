@@ -242,17 +242,17 @@ class ScalaJsGen(
         resolvedTypes + (name -> (enumDefinition))
       }
       case error: ErrorType => {
-        val withMemberTypes = error.members.map(_.foldLeft(resolvedTypes) {
+        val withMemberTypes = error.members.fold(resolvedTypes)(_.foldLeft(resolvedTypes) {
           case (types, (memberName, memberType)) =>
             genTypesRecursive(memberName, memberType, types)
-        }).getOrElse(resolvedTypes)
+        })
 
-        val memberFields = error.members.map { members =>
+        val memberFields = error.members.fold("") { members =>
           members.map {
             case (memberName, memberType) =>
               s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
           }.mkString("\n")
-        }.getOrElse("")
+        }
 
         val errorDefinition =
           s"""${docsAndAnnotation(error)}
@@ -272,31 +272,31 @@ class ScalaJsGen(
         withValue
       }
       case structure: StructureType => {
-        val withMemberTypes = structure.members.map(_.foldLeft(resolvedTypes) {
+        val withMemberTypes = structure.members.fold(resolvedTypes)(_.foldLeft(resolvedTypes) {
           case (types, (memberName, memberType)) =>
             genTypesRecursive(memberName, memberType, types)
-        }).getOrElse(resolvedTypes)
+        })
 
-        val memberFields = structure.members.map { members =>
+        val memberFields = structure.members.fold("") { members =>
           members.map {
             case (memberName, memberType) =>
               s"""  var ${cleanName(memberName)}: js.UndefOr[${className(memberType).getOrElse(memberName)}]"""
           }.mkString("\n")
-        }.getOrElse("")
+        }
 
-        val constructorArgs = structure.members.map { members =>
+        val constructorArgs = structure.members.fold("") { members =>
           members.map {
             case (memberName, memberType) =>
               s"""    ${cleanName(memberName)}: js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"""
           }.mkString(",\n")
-        }.getOrElse("")
+        }
         
-        val fieldMapping = structure.members.map { members =>
+        val fieldMapping = structure.members.fold("") { members =>
           members.map {
             case (memberName, memberType) =>
               s"""      "${cleanName(memberName)}" -> ${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"""
           }.mkString(",\n")
-        }.getOrElse("")
+        }
 
         val applyDeprecated = if (useCompanionObjectExtensions.contains(typeName)) {
             s"""@deprecated("Use the extension methods by importing ${typeName}Extensions._ instead.")"""
