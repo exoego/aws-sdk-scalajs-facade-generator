@@ -24,29 +24,22 @@ class ScalaJsGen(
       loop('-' :: name.toList).mkString
   }
 
-  private val rawServiceName: String = api.metadata.endpointPrefix.toLowerCase
-  private val scalaServiceName: String = cleanName(rawServiceName.replaceAll("-","_"))
-  private val serviceName = cleanName(kebab2camel(rawServiceName))
   private val serviceClassName = api.metadata.serviceId.replaceAll(" ", "") match {
     // special treatment
     case "SFN" => "StepFunctions"
     case "ElasticLoadBalancing" => "ELB"
+    case "Budgets" => "BudgetsService"
     case otherwise => otherwise
   }
   private val sdkClassName = serviceClassName match {
+    case "BudgetsService" => "Budgets"
     case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
     case otherwise => otherwise
   }
+  private val scalaServiceName: String = serviceClassName.toLowerCase
 
   val sourceDir = new File(projectDir, "src/main/scala")
-  val packageDir = new File(sourceDir, s"facade/amazonaws/services/${scalaServiceName}")
-
-  private val packageName = s"facade.amazonaws.services.${scalaServiceName}"
-  private val header =
-    s"""package ${rawServiceName}
-       |
-       |import scalajs._
-       |""".stripMargin
+  val packageDir = new File(sourceDir, s"facade/amazonaws/services")
 
   private val useCompanionObjectExtensions = Set("AttributeValue")
 
@@ -66,7 +59,7 @@ class ScalaJsGen(
     import java.io._
 
     mkdirs()
-    val f = new File(packageDir, serviceName + ".scala")
+    val f = new File(packageDir, serviceClassName + ".scala")
     f.createNewFile()
 
     val writer = new PrintWriter(new FileWriter(f))
