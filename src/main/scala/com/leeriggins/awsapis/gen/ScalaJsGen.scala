@@ -378,15 +378,36 @@ object ScalaJsGen {
 
     val apiVersions = com.leeriggins.awsapis.Apis.versions
 
-    apiVersions.foreach {
-      case (name, version) =>
-        val text = json(name, version, ApiType.normal)
-        val parsedText = parse(text)
+    val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
+    packageRootDir.mkdirs()
+    val awsFile = new File(packageRootDir, s"AWS.scala")
+    awsFile.createNewFile()
+    val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-        val api = parsedText.extract[Api]
+    try {
+      awsWriter.append(
+        s"""package facade.amazonaws
+           |
+           |object AWS {
+         """.stripMargin.trim)
+      awsWriter.println()
 
-        val gen = new ScalaJsGen(projectDir, api)
-        gen.gen()
+      apiVersions.foreach {
+        case (name, version) =>
+          val text = json(name, version, ApiType.normal)
+          val parsedText = parse(text)
+
+          val api = parsedText.extract[Api]
+
+          val gen = new ScalaJsGen(projectDir, api)
+          gen.gen()
+
+          val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
+          awsWriter.println(s"  def ${gen.serviceClassName}(options: AWSConfig = AWSConfig()): ${qualifiedName} = new ${qualifiedName}(options)")
+      }
+      awsWriter.println("}")
+    } finally {
+      awsWriter.close()
     }
   }
 }
