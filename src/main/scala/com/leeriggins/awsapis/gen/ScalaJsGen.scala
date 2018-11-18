@@ -41,8 +41,6 @@ class ScalaJsGen(
   val sourceDir = new File(projectDir, "src/main/scala")
   val packageDir = new File(sourceDir, s"facade/amazonaws/services")
 
-  private val useCompanionObjectExtensions = Set("AttributeValue")
-
   private def lowerFirst(str: String): String = {
     str.head.toLower +: str.tail
   }
@@ -287,16 +285,24 @@ class ScalaJsGen(
           }.mkString(",\n")
         }
 
-        val applyDeprecated = if (useCompanionObjectExtensions.contains(typeName)) {
-            s"""@deprecated("Use the extension methods by importing ${typeName}Extensions._ instead.")"""
-        } else {
-            ""
-        }
-        val structureDefinition =
+        val traitDefinition =
           s"""${docsAndAnnotation(structure)}
              |trait ${typeName} extends js.Object {
              |${memberFields}
-             |}
+             |}""".stripMargin
+
+        val insertFile = new File(s"src/main/resources/${serviceClassName}", s"${typeName}.scala")
+        val insertContent = if (insertFile.exists()) {
+          val source = io.Source.fromFile(insertFile, "UTF-8")
+          try {
+            source.mkString
+          } finally {
+            source.close()
+          }
+        } else ""
+
+        val structureDefinition =
+          s"""${traitDefinition}
              |
              |object ${typeName} {
              |  ${applyDeprecated} def apply(
@@ -308,8 +314,7 @@ class ScalaJsGen(
              |
              |    js.Dynamic.literal.applyDynamicNamed("apply")(_fields: _*).asInstanceOf[${typeName}]
              |  }
-             |}""".stripMargin.trim
-
+             |${insertContent}}""".stripMargin
 
         withMemberTypes + (typeName -> structureDefinition)
       }
