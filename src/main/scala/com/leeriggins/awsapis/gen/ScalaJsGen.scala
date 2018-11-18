@@ -1,10 +1,10 @@
 package com.leeriggins.awsapis.gen
 
 import java.io.File
+
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
-import org.json4s.DefaultFormats
 
 class ScalaJsGen(
     projectDir: File,
@@ -26,12 +26,23 @@ class ScalaJsGen(
 
   private val serviceClassName = api.metadata.serviceId.replaceAll(" ", "") match {
     // special treatment
-    case "SFN" => "StepFunctions"
-    case "ElasticLoadBalancing" => "ELB"
+    case "ApplicationDiscoveryService" => "ApplicationDiscovery"
     case "Budgets" => "BudgetsService"
+    case "CostandUsageReportService" => "CUR"
+    case "DatabaseMigrationService" => "DMS"
+    case "ElasticLoadBalancing" => "ELB"
+    case "ElasticLoadBalancingv2" => "ELBv2"
+    case "ElasticsearchService" => "ES"
+    case "IoT" => "Iot"
+    case "LexRuntimeService" => "LexRuntime"
+    case "mq" => "MQ"
+    case "SFN" => "StepFunctions"
+    case "signer" => "Signer"
+    case "Transcribe" => "TranscribeService"
     case otherwise => otherwise
   }
   private val sdkClassName = serviceClassName match {
+    case "ApplicationDiscovery" => "Discovery"
     case "BudgetsService" => "Budgets"
     case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
     case otherwise => otherwise
@@ -119,7 +130,7 @@ class ScalaJsGen(
 
     s"""  @js.native
        |  @JSImport("aws-sdk", "${sdkClassName}")
-       |  class ${serviceClassName}(config: facade.amazonaws.AWSConfig) extends js.Object {
+       |  class ${serviceClassName}(config: AWSConfig) extends js.Object {
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
   }
@@ -305,7 +316,7 @@ class ScalaJsGen(
           s"""${traitDefinition}
              |
              |object ${typeName} {
-             |  ${applyDeprecated} def apply(
+             |  def apply(
              |${constructorArgs}
              |  ): ${typeName} = {
              |    val _fields = IndexedSeq[(String, js.Any)](
