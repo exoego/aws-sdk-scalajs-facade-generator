@@ -162,12 +162,7 @@ class ScalaJsGen(
       case _: TimestampType => Some("js.Date")
       case _: BlobType => Some("nodejs.buffer.Buffer | nodejs.stream.Readable | js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
       case _: EnumType => Some("String")
-      case shape: ShapeType =>
-        // FIXME
-        shape.shape match {
-          case "Long" => Some("Double")
-          case _ => Some(shape.shape)
-        }
+      case shape: ShapeType => primitive2Scala.get(shape.shape).orElse(Some(shape.shape))
       case map: MapType => Some(s"js.Dictionary[${className(map.value).get}]")
       case list: ListType => Some(s"js.Array[${className(list.member).get}]")
       case _ => None
@@ -185,9 +180,15 @@ class ScalaJsGen(
     }
   }
 
+  private val primitive2Scala: Map[String, String] = Map(
+    "int" -> "Int",
+    "Integer" -> "Int",
+    "Long" -> "Double"
+  )
+
   private def genShapeTypeRef(shapeName: String, shapeType: AwsApiType): Option[String] = {
     className(shapeType).flatMap { className =>
-      if (shapeName != className) {
+      if (shapeName != className && !primitive2Scala.contains(shapeName)) {
         Some(s"""type ${shapeName} = ${className}""")
       } else {
         None
