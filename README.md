@@ -1,8 +1,9 @@
 # aws-sdk-scalajs-facade-generator
 
-This is a fork of awesome https://github.com/balshor/aws-sdk-apis-parser 
+This is a fork of awesome [balshor/aws-sdk-apis-parser](https://github.com/balshor/aws-sdk-apis-parser).
+Intention of fork is to change facade generator logic drastically.
 
-Intention of fork is to change ScalaJS facade generator drastically.
+A generated type facade can be found https://github.com/exoego/aws-sdk-scalajs-facade-generator
 
 
 ## Notes
