@@ -3,7 +3,7 @@
 This is a fork of awesome [balshor/aws-sdk-apis-parser](https://github.com/balshor/aws-sdk-apis-parser).
 Intention of fork is to change facade generator logic drastically.
 
-A generated type facade can be found https://github.com/exoego/aws-sdk-scalajs-facade-generator
+A generated type facade can be found https://github.com/exoego/aws-sdk-scalajs-facade
 
 
 ## Notes
