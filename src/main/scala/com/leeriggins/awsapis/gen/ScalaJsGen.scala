@@ -36,6 +36,7 @@ class ScalaJsGen(
     case "IoT" => "Iot"
     case "LexRuntimeService" => "LexRuntime"
     case "mq" => "MQ"
+    case "RDSData" => "RDSDataService"
     case "SFN" => "StepFunctions"
     case "signer" => "Signer"
     case "Transcribe" => "TranscribeService"

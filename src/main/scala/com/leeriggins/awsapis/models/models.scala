@@ -43,6 +43,7 @@ case class Operation(
   authtype: Option[String],
   endpointdiscovery: Option[Map[String,AwsApiType]],
   endpointoperation: Option[Boolean],
+  endpoint: Option[Endpoint],
   documentation: Option[String],
   documentationUrl: Option[String],
   deprecated: Option[Boolean],
@@ -50,6 +51,9 @@ case class Operation(
   name: Option[String],
   alias: Option[String],
   idempotent: Option[Boolean])
+
+case class Endpoint(
+  hostPrefix: Option[String])
 
 case class Error(
   shape: String,
