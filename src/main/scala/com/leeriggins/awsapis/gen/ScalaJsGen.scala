@@ -276,25 +276,49 @@ class ScalaJsGen(
           case (types, (memberName, memberType)) =>
             genTypesRecursive(memberName, memberType, types)
         })
+        val requiredFields = structure.required.map(_.toSet).getOrElse(Set.empty[String])
 
-        val memberFields = structure.members.fold("") { members =>
+        val sortedMembers = structure.members.map(_.toSeq.sortBy {
+          case (memberName, _) =>
+            (
+              !requiredFields(memberName), // required member first, optional second
+              memberName // alphabetical
+            )
+        })
+
+        val memberFields = sortedMembers.fold("") { members =>
           members.map {
             case (memberName, memberType) =>
-              s"""  var ${cleanName(memberName)}: js.UndefOr[${className(memberType).getOrElse(memberName)}]"""
+              val memberType_ = if (requiredFields(memberName)) {
+                s"${className(memberType).getOrElse(memberName)}"
+              } else {
+                s"js.UndefOr[${className(memberType).getOrElse(memberName)}]"
+              }
+              s"""  var ${cleanName(memberName)}: ${memberType_}"""
           }.mkString("\n")
         }
 
-        val constructorArgs = structure.members.fold("") { members =>
+        val constructorArgs = sortedMembers.fold("") { members =>
           members.map {
             case (memberName, memberType) =>
-              s"""    ${cleanName(memberName)}: js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"""
+              val memberType_ = if (requiredFields(memberName)) {
+                s"${className(memberType).getOrElse(memberName)}"
+              } else {
+                s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
+              }
+              s"""    ${cleanName(memberName)}: ${memberType_}"""
           }.mkString(",\n")
         }
         
-        val fieldMapping = structure.members.fold("") { members =>
+        val fieldMapping = sortedMembers.fold("") { members =>
           members.map {
             case (memberName, memberType) =>
-              s"""      "${cleanName(memberName)}" -> ${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"""
+              val memberType_ = if (requiredFields(memberName)) {
+                s"${cleanName(memberName)}.asInstanceOf[js.Any]"
+              } else {
+                s"${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"
+              }
+              s"""      "${cleanName(memberName)}" -> ${memberType_}"""
           }.mkString(",\n")
         }
 
