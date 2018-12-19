@@ -140,8 +140,8 @@ class ScalaJsGen(
 
   private final val fieldReference = "<a>(\\w+)\\$(\\w+)</a>".r
 
-  private def docsAndAnnotation(awsApiType: AwsApiType, isJsNative: Boolean = true): String = {
-    val doc = awsApiType.documentation.map { documentation =>
+  private def docsAndAnnotation(awsApiType: AwsApiType, typeName: String, isJsNative: Boolean = true): String = {
+    val doc = awsApiType.documentation.filter(_ != s"<p>${typeName}</p>").map { documentation =>
       val reps: Seq[(Regex, Regex.Match => String)] = Seq(
         fieldReference ->  (matched => {
             s"[[${matched.group(1)}.${matched.group(2)}]]"
@@ -245,7 +245,7 @@ class ScalaJsGen(
         val valuesList = s"""  val values = IndexedSeq(${symbolMap.map(_._1).mkString(", ")})"""
 
         val enumDefinition =
-          s"""${docsAndAnnotation(enum, isJsNative = false)}
+          s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
              |object ${name}Enum {
              |${symbolDefinitions.mkString("\n")}
              |
@@ -268,7 +268,7 @@ class ScalaJsGen(
         }
 
         val errorDefinition =
-          s"""${docsAndAnnotation(error)}
+          s"""${docsAndAnnotation(error, typeName)}
              |trait ${typeName}Exception extends js.Object {
              |${memberFields}
              |}""".stripMargin.trim
@@ -336,7 +336,7 @@ class ScalaJsGen(
         }
 
         val traitDefinition =
-          s"""${docsAndAnnotation(structure)}
+          s"""${docsAndAnnotation(structure, typeName)}
              |trait ${typeName} extends js.Object {
              |${memberFields}
              |}""".stripMargin
