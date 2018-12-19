@@ -139,24 +139,28 @@ class ScalaJsGen(
   }
 
   private final val fieldReference = "<a>(\\w+)\\$(\\w+)</a>".r
+  private final val listItemPattern = "<li>\\s*(.*?)\\s*</li>".r
+  private final val paragraphPattern = "<p>\\s*(.*?)\\s*</p>".r
+  private final val notePattern = "<note>\\s*".r
+  private final val removeTagPattern = "\\s*</?(ul|note)>\\s*".r
 
   private def docsAndAnnotation(awsApiType: AwsApiType, typeName: String, isJsNative: Boolean = true): String = {
     val doc = awsApiType.documentation.filter(_ != s"<p>${typeName}</p>").map { documentation =>
-      val reps: Seq[(Regex, Regex.Match => String)] = Seq(
-        fieldReference -> (matched => {
-            matched.group(1) match {
-              case `typeName` => s"${matched.group(2)}"
-              case _ => s"[[${matched.group(1)}.${matched.group(2)}]]"
-            }
+      val reps: Seq[String => String] = Seq(
+        doc => fieldReference.replaceAllIn(doc, matched => {
+          matched.group(1) match {
+            case `typeName` => s"${matched.group(2)}"
+            case _ => s"[[${matched.group(1)}.${matched.group(2)}]]"
           }
-        )
+        }),
+        doc => doc.replaceAllLiterally("$", ""),
+        doc => notePattern.replaceAllIn(doc, "\n'''Note:'''"),
+        doc => removeTagPattern.replaceAllIn(doc, _ => s""),
+        doc => listItemPattern.replaceAllIn(doc, matched => s"* ${matched.group(1)}\n"),
+        doc => paragraphPattern.replaceAllIn(doc, matched => s"${matched.group(1)}\n"),
       )
-      val formattedDoc = reps.foldLeft(documentation){ case (d, pair) =>
-          pair._1.replaceAllIn(d, pair._2)
-      }
-      s"""/**
-         | * ${formattedDoc}
-         | */""".stripMargin
+      val formattedDoc = reps.foldLeft(documentation) { case (d, pair) => pair(d) }.split("\n").filter(_.nonEmpty)
+      formattedDoc.mkString(sep = "\n * ", start = "/**\n * ", end ="\n */")
     }
 
     val deprecation = awsApiType.deprecated.flatMap { dep =>
