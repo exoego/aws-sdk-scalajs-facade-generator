@@ -143,8 +143,11 @@ class ScalaJsGen(
   private def docsAndAnnotation(awsApiType: AwsApiType, typeName: String, isJsNative: Boolean = true): String = {
     val doc = awsApiType.documentation.filter(_ != s"<p>${typeName}</p>").map { documentation =>
       val reps: Seq[(Regex, Regex.Match => String)] = Seq(
-        fieldReference ->  (matched => {
-            s"[[${matched.group(1)}.${matched.group(2)}]]"
+        fieldReference -> (matched => {
+            matched.group(1) match {
+              case `typeName` => s"${matched.group(2)}"
+              case _ => s"[[${matched.group(1)}.${matched.group(2)}]]"
+            }
           }
         )
       )
