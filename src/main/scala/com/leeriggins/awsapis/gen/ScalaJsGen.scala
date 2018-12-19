@@ -6,6 +6,8 @@ import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
 
+import scala.util.matching.Regex
+
 class ScalaJsGen(
     projectDir: File,
     api: Api) {
@@ -136,10 +138,21 @@ class ScalaJsGen(
        |  }""".stripMargin
   }
 
+  private final val fieldReference = "<a>(\\w+)\\$(\\w+)</a>".r
+
   private def docsAndAnnotation(awsApiType: AwsApiType, isJsNative: Boolean = true): String = {
     val doc = awsApiType.documentation.map { documentation =>
+      val reps: Seq[(Regex, Regex.Match => String)] = Seq(
+        fieldReference ->  (matched => {
+            s"[[${matched.group(1)}.${matched.group(2)}]]"
+          }
+        )
+      )
+      val formattedDoc = reps.foldLeft(documentation){ case (d, pair) =>
+          pair._1.replaceAllIn(d, pair._2)
+      }
       s"""/**
-         | * ${documentation}
+         | * ${formattedDoc}
          | */""".stripMargin
     }
 
