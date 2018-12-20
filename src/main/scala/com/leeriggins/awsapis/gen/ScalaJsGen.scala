@@ -6,6 +6,8 @@ import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
 
+import scala.util.matching.Regex
+
 class ScalaJsGen(
     projectDir: File,
     api: Api) {
@@ -136,11 +138,29 @@ class ScalaJsGen(
        |  }""".stripMargin
   }
 
-  private def docsAndAnnotation(awsApiType: AwsApiType, isJsNative: Boolean = true): String = {
-    val doc = awsApiType.documentation.map { documentation =>
-      s"""/**
-         | * ${documentation}
-         | */""".stripMargin
+  private final val fieldReference = "<a>(\\w+)\\$(\\w+)</a>".r
+  private final val listItemPattern = "<li>\\s*(.*?)\\s*</li>".r
+  private final val paragraphPattern = "<p>\\s*(.*?)\\s*</p>".r
+  private final val notePattern = "<note>\\s*".r
+  private final val removeTagPattern = "\\s*</?(ul|note)>\\s*".r
+
+  private def docsAndAnnotation(awsApiType: AwsApiType, typeName: String, isJsNative: Boolean = true): String = {
+    val doc = awsApiType.documentation.filter(_ != s"<p>${typeName}</p>").map { documentation =>
+      val reps: Seq[String => String] = Seq(
+        doc => fieldReference.replaceAllIn(doc, matched => {
+          matched.group(1) match {
+            case `typeName` => s"${matched.group(2)}"
+            case _ => s"[[${matched.group(1)}.${matched.group(2)}]]"
+          }
+        }),
+        doc => doc.replaceAllLiterally("$", ""),
+        doc => notePattern.replaceAllIn(doc, "\n'''Note:'''"),
+        doc => removeTagPattern.replaceAllIn(doc, _ => s""),
+        doc => listItemPattern.replaceAllIn(doc, matched => s"* ${matched.group(1)}\n"),
+        doc => paragraphPattern.replaceAllIn(doc, matched => s"${matched.group(1)}\n"),
+      )
+      val formattedDoc = reps.foldLeft(documentation) { case (d, pair) => pair(d) }.split("\n").filter(_.nonEmpty)
+      formattedDoc.mkString(sep = "\n * ", start = "/**\n * ", end ="\n */")
     }
 
     val deprecation = awsApiType.deprecated.flatMap { dep =>
@@ -232,7 +252,7 @@ class ScalaJsGen(
         val valuesList = s"""  val values = IndexedSeq(${symbolMap.map(_._1).mkString(", ")})"""
 
         val enumDefinition =
-          s"""${docsAndAnnotation(enum, isJsNative = false)}
+          s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
              |object ${name}Enum {
              |${symbolDefinitions.mkString("\n")}
              |
@@ -255,7 +275,7 @@ class ScalaJsGen(
         }
 
         val errorDefinition =
-          s"""${docsAndAnnotation(error)}
+          s"""${docsAndAnnotation(error, typeName)}
              |trait ${typeName}Exception extends js.Object {
              |${memberFields}
              |}""".stripMargin.trim
@@ -323,7 +343,7 @@ class ScalaJsGen(
         }
 
         val traitDefinition =
-          s"""${docsAndAnnotation(structure)}
+          s"""${docsAndAnnotation(structure, typeName)}
              |trait ${typeName} extends js.Object {
              |${memberFields}
              |}""".stripMargin
