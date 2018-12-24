@@ -133,7 +133,9 @@ class ScalaJsGen(
 
     s"""  @js.native
        |  @JSImport("aws-sdk", "${sdkClassName}")
-       |  class ${serviceClassName}(config: AWSConfig) extends js.Object {
+       |  class ${serviceClassName}() extends js.Object {
+       |    def this(config: AWSConfig) = this()
+       |
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
   }
@@ -439,28 +441,33 @@ object ScalaJsGen {
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
+    val types = apiVersions.map {
+      case (name, version) =>
+        val text = json(name, version, ApiType.normal)
+        val parsedText = parse(text)
+        val api = parsedText.extract[Api]
+        val gen = new ScalaJsGen(projectDir, api)
+        gen.gen()
+
+        val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
+        s"  type ${gen.serviceClassName} = ${qualifiedName}"
+    }.mkString("\n")
+
     try {
       awsWriter.append(
         s"""package facade.amazonaws
            |
-           |object AWS {
+           |import scala.scalajs.js
+           |import scala.scalajs.js.annotation.JSImport
+           |
+           |@js.native
+           |@JSImport("aws-sdk", JSImport.Namespace)
+           |object AWS extends js.Object {
+           |  var config: AWSConfig = js.native
+           |
+           |${types}
+           |}
          """.stripMargin.trim)
-      awsWriter.println()
-
-      apiVersions.foreach {
-        case (name, version) =>
-          val text = json(name, version, ApiType.normal)
-          val parsedText = parse(text)
-
-          val api = parsedText.extract[Api]
-
-          val gen = new ScalaJsGen(projectDir, api)
-          gen.gen()
-
-          val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
-          awsWriter.println(s"  def ${gen.serviceClassName}(options: AWSConfig = AWSConfig()): ${qualifiedName} = new ${qualifiedName}(options)")
-      }
-      awsWriter.println("}")
     } finally {
       awsWriter.close()
     }
