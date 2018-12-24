@@ -142,6 +142,7 @@ class ScalaJsGen(
 
   private final val seeAlso = """<div class="seeAlso">\s*<a href="([^"]+)">([^<]+)</a>\s*</div>""".r
   private final val fieldReference = "<a>(\\w+)\\$(\\w+)</a>".r
+  private final val externalLinkReference = """<a href="([^"]+)">([^<]+)</a>""".r
   private final val listItemPattern = "<li>\\s*(.*?)\\s*</li>".r
   private final val paragraphPattern = "<p>\\s*(.*?)\\s*</p>".r
   private final val notePattern = "<note>\\s*".r
@@ -158,6 +159,7 @@ class ScalaJsGen(
         }),
         doc => doc.replaceAllLiterally("$", ""),
         doc => notePattern.replaceAllIn(doc, "\n'''Note:'''"),
+        doc => externalLinkReference.replaceAllIn(doc, matched => s"[[${matched.group(1)}|${matched.group(2)}]]"),
         doc => seeAlso.replaceAllIn(doc, matched => s"\n@see See also [[${matched.group(1)}|${matched.group(2)}]]"),
         doc => removeTagPattern.replaceAllIn(doc, _ => s""),
         doc => listItemPattern.replaceAllIn(doc, matched => s"* ${matched.group(1)}\n"),
