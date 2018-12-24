@@ -140,7 +140,13 @@ class ScalaJsGen(
        |  }""".stripMargin
   }
 
+  private final val seeAlso = """<div class="seeAlso">\s*(.+)\s*</div>""".r
   private final val fieldReference = "<a>(\\w+)\\$(\\w+)</a>".r
+  private final val boldText = "<b>([^<]+)</b>".r
+  private final val headings = "<h4(?:[^>]*)>([^<]+)</h4>".r
+  private final val subheadings = "<h5(?:[^>]*)>([^<]+)</h5>".r
+  private final val externalLinkReference = """<a href="([^"]+)">([^<]+)</a>""".r
+  private final val codeBlock = """<pre><code>(.+?)</code></pre>""".r
   private final val listItemPattern = "<li>\\s*(.*?)\\s*</li>".r
   private final val paragraphPattern = "<p>\\s*(.*?)\\s*</p>".r
   private final val notePattern = "<note>\\s*".r
@@ -157,6 +163,12 @@ class ScalaJsGen(
         }),
         doc => doc.replaceAllLiterally("$", ""),
         doc => notePattern.replaceAllIn(doc, "\n'''Note:'''"),
+        doc => boldText.replaceAllIn(doc, matched => s"```${matched.group(1)}```"),
+        doc => headings.replaceAllIn(doc, matched => s"\n=${matched.group(1)}=\n"),
+        doc => subheadings.replaceAllIn(doc, matched => s"\n==${matched.group(1)}==\n"),
+        doc => codeBlock.replaceAllIn(doc, matched => s"{{{${matched.group(1)}}}}"),
+        doc => externalLinkReference.replaceAllIn(doc, matched => s"[[${matched.group(1)}|${matched.group(2)}]]"),
+        doc => seeAlso.replaceAllIn(doc, matched => s"\n@see ${matched.group(1)}"),
         doc => removeTagPattern.replaceAllIn(doc, _ => s""),
         doc => listItemPattern.replaceAllIn(doc, matched => s"* ${matched.group(1)}\n"),
         doc => paragraphPattern.replaceAllIn(doc, matched => s"${matched.group(1)}\n"),
