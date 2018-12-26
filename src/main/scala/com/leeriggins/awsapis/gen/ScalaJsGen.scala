@@ -462,7 +462,10 @@ object ScalaJsGen {
         gen.gen()
 
         val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
-        s"  type ${gen.serviceClassName} = ${qualifiedName}"
+        s"""  type ${gen.serviceClassName} = ${qualifiedName}
+           |  def ${gen.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
+           |  def ${gen.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
+           |""".stripMargin
     }.mkString("\n")
 
     try {
@@ -474,8 +477,15 @@ object ScalaJsGen {
            |
            |@js.native
            |@JSImport("aws-sdk", JSImport.Namespace)
-           |object AWS extends js.Object {
+           |private[amazonaws] object AWSGlobal extends js.Object {
            |  var config: AWSConfig = js.native
+           |}
+           |
+           |object AWS extends js.Object {
+           |  def config: AWSConfig = AWSGlobal.config
+           |  def config_=(config: AWSConfig): Unit = {
+           |    AWSGlobal.config = config
+           |  }
            |
            |${types}
            |}
