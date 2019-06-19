@@ -9,7 +9,12 @@ case class Api(version: Option[String],
                documentation: Option[String],
                operations: Map[String, Operation],
                shapes: Map[String, AwsApiType],
-               examples: Option[Examples])
+               examples: Option[Examples],
+               authorizers: Option[Map[String, Authorizer]] = None)
+
+case class Authorizer(name: String, `type`: String, placement: AuthorizerPlacement)
+
+case class AuthorizerPlacement(location: String, name: String)
 
 case class Examples()
 
