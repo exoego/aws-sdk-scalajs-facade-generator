@@ -257,155 +257,149 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
         resolvedTypes
       }
-      case enum: EnumType => {
-        // enums are just strings in the AWS API
-
-        val symbolMap = enum.symbols.map { symbol =>
-          cleanName(symbol) -> symbol
-        }
-        val symbolDefinitions = symbolMap.map {
-          case (symbolName, symbol) =>
-            s"""  val ${symbolName} = "${symbol}""""
-        }
-
-        val valuesList = s"""  val values = IndexedSeq(${symbolMap.map(_._1).mkString(", ")})"""
-
-        val enumDefinition =
-          s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
-             |object ${name}Enum {
-             |${symbolDefinitions.mkString("\n")}
-             |
-             |${valuesList}
-             |}""".stripMargin
-
-        resolvedTypes + (name -> (enumDefinition))
-      }
-      case error: ErrorType => {
-        val withMemberTypes = error.members.fold(resolvedTypes)(_.foldLeft(resolvedTypes) {
-          case (types, (memberName, memberType)) =>
-            genTypesRecursive(memberName, memberType, types)
-        })
-
-        val memberFields = error.members.fold("") { members =>
-          members
-            .map {
-              case (memberName, memberType) =>
-                s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
-            }
-            .mkString("\n")
-        }
-
-        val errorDefinition =
-          s"""${docsAndAnnotation(error, typeName)}
-             |trait ${typeName}Exception extends js.Object {
-             |${memberFields}
-             |}""".stripMargin.trim
-
-        withMemberTypes + (typeName -> errorDefinition)
-      }
-      case list: ListType => {
-        genTypesRecursive(name + "Item", list.member, resolvedTypes)
-      }
+      case enum: EnumType   => genEnumType(enum, name, typeName, resolvedTypes)
+      case error: ErrorType => genErrorType(error, typeName, resolvedTypes)
+      case list: ListType   => genTypesRecursive(name + "Item", list.member, resolvedTypes)
       case map: MapType => {
         val withKey   = genTypesRecursive(name + "Key", map.key, resolvedTypes)
         val withValue = genTypesRecursive(name + "Value", map.value, withKey)
-
         withValue
       }
-      case structure: StructureType => {
-        val withMemberTypes = structure.members.fold(resolvedTypes)(_.foldLeft(resolvedTypes) {
-          case (types, (memberName, memberType)) =>
-            genTypesRecursive(memberName, memberType, types)
-        })
-        val requiredFields = structure.required.map(_.toSet).getOrElse(Set.empty[String])
-
-        val sortedMembers = structure.members.map(_.toSeq.sortBy {
-          case (memberName, _) =>
-            (
-              !requiredFields(memberName), // required member first, optional second
-              memberName                   // alphabetical
-            )
-        })
-
-        val memberFields = sortedMembers.fold("") { members =>
-          members
-            .map {
-              case (memberName, memberType) =>
-                val memberType_ = if (requiredFields(memberName)) {
-                  s"${className(memberType).getOrElse(memberName)}"
-                } else {
-                  s"js.UndefOr[${className(memberType).getOrElse(memberName)}]"
-                }
-                s"""  var ${cleanName(memberName)}: ${memberType_}"""
-            }
-            .mkString("\n")
-        }
-
-        val constructorArgs = sortedMembers.fold("") { members =>
-          members
-            .map {
-              case (memberName, memberType) =>
-                val memberType_ = if (requiredFields(memberName)) {
-                  s"${className(memberType).getOrElse(memberName)}"
-                } else {
-                  s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
-                }
-                s"""    ${cleanName(memberName)}: ${memberType_}"""
-            }
-            .mkString(",\n")
-        }
-
-        val fieldMapping = sortedMembers.fold("") { members =>
-          members
-            .map {
-              case (memberName, memberType) =>
-                val memberType_ = if (requiredFields(memberName)) {
-                  s"${cleanName(memberName)}.asInstanceOf[js.Any]"
-                } else {
-                  s"${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"
-                }
-                s"""      "${cleanName(memberName)}" -> ${memberType_}"""
-            }
-            .mkString(",\n")
-        }
-
-        val traitDefinition =
-          s"""${docsAndAnnotation(structure, typeName)}
-             |trait ${typeName} extends js.Object {
-             |${memberFields}
-             |}""".stripMargin
-
-        val insertFile = new File(s"src/main/resources/${serviceClassName}", s"${typeName}.scala")
-        val insertContent = if (insertFile.exists()) {
-          val source = io.Source.fromFile(insertFile, "UTF-8")
-          try {
-            source.mkString
-          } finally {
-            source.close()
-          }
-        } else ""
-
-        val structureDefinition =
-          s"""${traitDefinition}
-             |
-             |object ${typeName} {
-             |  def apply(
-             |${constructorArgs}
-             |  ): ${typeName} = {
-             |    val _fields = IndexedSeq[(String, js.Any)](
-             |${fieldMapping}
-             |    ).filter(_._2 != (js.undefined : js.Any))
-             |
-             |    js.Dynamic.literal.applyDynamicNamed("apply")(_fields: _*).asInstanceOf[${typeName}]
-             |  }
-             |${insertContent}}""".stripMargin
-
-        withMemberTypes + (typeName -> structureDefinition)
-      }
-      case shape: ShapeType => {
-        resolvedTypes
-      }
+      case structure: StructureType => genStructureType(structure, typeName, resolvedTypes)
+      case _: ShapeType             => resolvedTypes
     }
+  }
+
+  private def genEnumType(enum: EnumType, name: String, typeName: String, resolvedTypes: Map[String, String]) = {
+    // enums are just strings in the AWS API
+    val symbolMap = enum.symbols.map { symbol =>
+      cleanName(symbol) -> symbol
+    }
+    val symbolDefinitions = symbolMap.map {
+      case (symbolName, symbol) =>
+        s"""  val ${symbolName} = "${symbol}""""
+    }
+
+    val valuesList = s"""  val values = IndexedSeq(${symbolMap.map(_._1).mkString(", ")})"""
+
+    val enumDefinition =
+      s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
+         |object ${name}Enum {
+         |${symbolDefinitions.mkString("\n")}
+         |
+             |${valuesList}
+         |}""".stripMargin
+
+    resolvedTypes + (name -> (enumDefinition))
+  }
+
+  private def genErrorType(error: ErrorType, typeName: String, resolvedTypes: Map[String, String]) = {
+    val withMemberTypes = error.members.fold(resolvedTypes)(_.foldLeft(resolvedTypes) {
+      case (types, (memberName, memberType)) =>
+        genTypesRecursive(memberName, memberType, types)
+    })
+
+    val memberFields = error.members.fold("")(_.map {
+      case (memberName, memberType) =>
+        s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
+    }.mkString("\n"))
+
+    val errorDefinition =
+      s"""${docsAndAnnotation(error, typeName)}
+         |trait ${typeName}Exception extends js.Object {
+         |${memberFields}
+         |}""".stripMargin.trim
+
+    withMemberTypes + (typeName -> errorDefinition)
+  }
+
+  private def genStructureMemberFields(sortedMembers: Option[Seq[(String, AwsApiType)]],
+                                       requiredFields: Set[String]) = {
+    sortedMembers.fold("")(_.map {
+      case (memberName, memberType) =>
+        val memberType_ = if (requiredFields(memberName)) {
+          s"${className(memberType).getOrElse(memberName)}"
+        } else {
+          s"js.UndefOr[${className(memberType).getOrElse(memberName)}]"
+        }
+        s"""  var ${cleanName(memberName)}: ${memberType_}"""
+    }.mkString("\n"))
+  }
+
+  private def genStructureConstructorArgs(sortedMembers: Option[Seq[(String, AwsApiType)]],
+                                          requiredFields: Set[String]) = {
+    sortedMembers.fold("")(_.map {
+      case (memberName, memberType) =>
+        val memberType_ = if (requiredFields(memberName)) {
+          s"${className(memberType).getOrElse(memberName)}"
+        } else {
+          s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
+        }
+        s"""    ${cleanName(memberName)}: ${memberType_}"""
+    }.mkString(",\n"))
+  }
+
+  private def genStructureFieldMapping(sortedMembers: Option[Seq[(String, AwsApiType)]],
+                                       requiredFields: Set[String]) = {
+    sortedMembers.fold("")(_.map {
+      case (memberName, _) =>
+        val memberType_ = if (requiredFields(memberName)) {
+          s"${cleanName(memberName)}.asInstanceOf[js.Any]"
+        } else {
+          s"${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"
+        }
+        s"""      "${cleanName(memberName)}" -> ${memberType_}"""
+    }.mkString(",\n"))
+  }
+
+  private def requiredAndAlphabetical(requiredFields: Set[String]): ((String, AwsApiType)) => (Boolean, String) = {
+    case (memberName, _) =>
+      (
+        !requiredFields(memberName), // required member first, optional second
+        memberName                   // alphabetical
+      )
+  }
+
+  private def genStructureType(structure: StructureType, typeName: String, resolvedTypes: Map[String, String]) = {
+    val withMemberTypes = structure.members.fold(resolvedTypes)(_.foldLeft(resolvedTypes) {
+      case (types, (memberName, memberType)) =>
+        genTypesRecursive(memberName, memberType, types)
+    })
+    val requiredFields  = structure.required.map(_.toSet).getOrElse(Set.empty[String])
+    val sortedMembers   = structure.members.map(_.toSeq.sortBy(requiredAndAlphabetical(requiredFields)))
+    val memberFields    = genStructureMemberFields(sortedMembers, requiredFields)
+    val constructorArgs = genStructureConstructorArgs(sortedMembers, requiredFields)
+    val fieldMapping    = genStructureFieldMapping(sortedMembers, requiredFields)
+    val traitDefinition =
+      s"""${docsAndAnnotation(structure, typeName)}
+         |trait ${typeName} extends js.Object {
+         |${memberFields}
+         |}""".stripMargin
+    val insertFile = new File(s"src/main/resources/${serviceClassName}", s"${typeName}.scala")
+    val insertContent = if (insertFile.exists()) {
+      val source = io.Source.fromFile(insertFile, "UTF-8")
+      try {
+        source.mkString
+      } finally {
+        source.close()
+      }
+    } else ""
+    val structureDefinition =
+      s"""${traitDefinition}
+         |
+         |object ${typeName} {
+         |  def apply(
+         |${constructorArgs}
+         |  ): ${typeName} = {
+         |    val _fields = IndexedSeq[(String, js.Any)](
+         |${fieldMapping}
+         |    ).filter(_._2 != (js.undefined : js.Any))
+         |
+         |    js.Dynamic.literal.applyDynamicNamed("apply")(_fields: _*).asInstanceOf[${typeName}]
+         |  }
+         |${insertContent}}""".stripMargin
+
+    withMemberTypes + (typeName -> structureDefinition)
   }
 
 }
