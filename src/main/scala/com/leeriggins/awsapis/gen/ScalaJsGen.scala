@@ -8,17 +8,15 @@ import com.leeriggins.awsapis.parser._
 
 import scala.util.matching.Regex
 
-class ScalaJsGen(
-    projectDir: File,
-    api: Api) {
+class ScalaJsGen(projectDir: File, api: Api) {
 
-  private def kebab2camel(name : String): String = {
-    def loop(x : List[Char]): List[Char] = (x: @unchecked) match {
+  private def kebab2camel(name: String): String = {
+    def loop(x: List[Char]): List[Char] = (x: @unchecked) match {
       case '-' :: '-' :: rest => loop('-' :: rest)
-      case '-' :: c :: rest => Character.toUpperCase(c) :: loop(rest)
-      case '-' :: Nil => Nil
-      case c :: rest => c :: loop(rest)
-      case Nil => Nil
+      case '-' :: c :: rest   => Character.toUpperCase(c) :: loop(rest)
+      case '-' :: Nil         => Nil
+      case c :: rest          => c :: loop(rest)
+      case Nil                => Nil
     }
     if (name == null)
       ""
@@ -29,30 +27,30 @@ class ScalaJsGen(
   private val serviceClassName = api.metadata.serviceId.replaceAll(" ", "") match {
     // special treatment
     case "ApplicationDiscoveryService" => "ApplicationDiscovery"
-    case "Budgets" => "BudgetsService"
-    case "CostandUsageReportService" => "CUR"
-    case "DatabaseMigrationService" => "DMS"
-    case "ElasticLoadBalancing" => "ELB"
-    case "ElasticLoadBalancingv2" => "ELBv2"
-    case "ElasticsearchService" => "ES"
-    case "IoT" => "Iot"
-    case "LexRuntimeService" => "LexRuntime"
-    case "mq" => "MQ"
-    case "RDSData" => "RDSDataService"
-    case "SFN" => "StepFunctions"
-    case "signer" => "Signer"
-    case "Transcribe" => "TranscribeService"
-    case otherwise => otherwise
+    case "Budgets"                     => "BudgetsService"
+    case "CostandUsageReportService"   => "CUR"
+    case "DatabaseMigrationService"    => "DMS"
+    case "ElasticLoadBalancing"        => "ELB"
+    case "ElasticLoadBalancingv2"      => "ELBv2"
+    case "ElasticsearchService"        => "ES"
+    case "IoT"                         => "Iot"
+    case "LexRuntimeService"           => "LexRuntime"
+    case "mq"                          => "MQ"
+    case "RDSData"                     => "RDSDataService"
+    case "SFN"                         => "StepFunctions"
+    case "signer"                      => "Signer"
+    case "Transcribe"                  => "TranscribeService"
+    case otherwise                     => otherwise
   }
   private val sdkClassName = serviceClassName match {
-    case "ApplicationDiscovery" => "Discovery"
-    case "BudgetsService" => "Budgets"
+    case "ApplicationDiscovery"    => "Discovery"
+    case "BudgetsService"          => "Budgets"
     case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
-    case otherwise => otherwise
+    case otherwise                 => otherwise
   }
   private val scalaServiceName: String = serviceClassName.toLowerCase
 
-  val sourceDir = new File(projectDir, "src/main/scala")
+  val sourceDir  = new File(projectDir, "src/main/scala")
   val packageDir = new File(sourceDir, s"facade/amazonaws/services")
 
   private def lowerFirst(str: String): String = {
@@ -112,16 +110,25 @@ class ScalaJsGen(
        |package ${scalaServiceName} {
        |${serviceDefinition()}
        |
-       |${allTypes.toIndexedSeq.sorted.map(_._2).mkString("\n\n").split('\n').map { line => if (line.length > 0) "  " + line else line }.mkString("\n")}
+       |${allTypes.toIndexedSeq.sorted
+         .map(_._2)
+         .mkString("\n\n")
+         .split('\n')
+         .map { line =>
+           if (line.length > 0) "  " + line else line
+         }
+         .mkString("\n")}
        |}""".stripMargin
   }
 
   private def serviceDefinition(): String = {
     val operations = api.operations.map {
       case (opName, operation) =>
-        val outputType = operation.output.flatMap { output =>
-          className(output.`type`)
-        }.getOrElse("js.Object")
+        val outputType = operation.output
+          .flatMap { output =>
+            className(output.`type`)
+          }
+          .getOrElse("js.Object")
 
         val parameters = operation.input.fold("") { input =>
           val inputName = className(input.`type`).get
@@ -140,27 +147,28 @@ class ScalaJsGen(
        |  }""".stripMargin
   }
 
-  private final val seeAlso = """<div class="seeAlso">\s*(.+)\s*</div>""".r
-  private final val fieldReference = "<a>(\\w+)\\$(\\w+)</a>".r
-  private final val boldText = "<b>([^<]+)</b>".r
-  private final val headings = "<h4(?:[^>]*)>([^<]+)</h4>".r
-  private final val subheadings = "<h5(?:[^>]*)>([^<]+)</h5>".r
+  private final val seeAlso               = """<div class="seeAlso">\s*(.+)\s*</div>""".r
+  private final val fieldReference        = "<a>(\\w+)\\$(\\w+)</a>".r
+  private final val boldText              = "<b>([^<]+)</b>".r
+  private final val headings              = "<h4(?:[^>]*)>([^<]+)</h4>".r
+  private final val subheadings           = "<h5(?:[^>]*)>([^<]+)</h5>".r
   private final val externalLinkReference = """<a href="([^"]+)">([^<]+)</a>""".r
-  private final val codeBlock = """<pre><code>(.+?)</code></pre>""".r
-  private final val listItemPattern = "<li>\\s*(.*?)\\s*</li>".r
-  private final val paragraphPattern = "<p>\\s*(.*?)\\s*</p>".r
-  private final val notePattern = "<note>\\s*".r
-  private final val removeTagPattern = "\\s*</?(ul|note)>\\s*".r
+  private final val codeBlock             = """<pre><code>(.+?)</code></pre>""".r
+  private final val listItemPattern       = "<li>\\s*(.*?)\\s*</li>".r
+  private final val paragraphPattern      = "<p>\\s*(.*?)\\s*</p>".r
+  private final val notePattern           = "<note>\\s*".r
+  private final val removeTagPattern      = "\\s*</?(ul|note)>\\s*".r
 
   private def docsAndAnnotation(awsApiType: AwsApiType, typeName: String, isJsNative: Boolean = true): String = {
     val doc = awsApiType.documentation.filter(_ != s"<p>${typeName}</p>").map { documentation =>
       val reps: Seq[String => String] = Seq(
-        doc => fieldReference.replaceAllIn(doc, matched => {
-          matched.group(1) match {
-            case `typeName` => s"${matched.group(2)}"
-            case _ => s"[[${matched.group(1)}.${matched.group(2)}]]"
-          }
-        }),
+        doc =>
+          fieldReference.replaceAllIn(doc, matched => {
+            matched.group(1) match {
+              case `typeName` => s"${matched.group(2)}"
+              case _          => s"[[${matched.group(1)}.${matched.group(2)}]]"
+            }
+          }),
         doc => doc.replaceAllLiterally("$", ""),
         doc => notePattern.replaceAllIn(doc, "\n'''Note:'''"),
         doc => boldText.replaceAllIn(doc, matched => s"```${matched.group(1)}```"),
@@ -171,10 +179,10 @@ class ScalaJsGen(
         doc => seeAlso.replaceAllIn(doc, matched => s"\n@see ${matched.group(1)}"),
         doc => removeTagPattern.replaceAllIn(doc, _ => s""),
         doc => listItemPattern.replaceAllIn(doc, matched => s"* ${matched.group(1)}\n"),
-        doc => paragraphPattern.replaceAllIn(doc, matched => s"${matched.group(1)}\n"),
+        doc => paragraphPattern.replaceAllIn(doc, matched => s"${matched.group(1)}\n")
       )
       val formattedDoc = reps.foldLeft(documentation) { case (d, pair) => pair(d) }.split("\n").filter(_.nonEmpty)
-      formattedDoc.mkString(sep = "\n * ", start = "/**\n * ", end ="\n */")
+      formattedDoc.mkString(sep = "\n * ", start = "/**\n * ", end = "\n */")
     }
 
     val deprecation = awsApiType.deprecated.flatMap { dep =>
@@ -188,27 +196,28 @@ class ScalaJsGen(
 
   private def className(awsApiType: AwsApiType): Option[String] = {
     awsApiType match {
-      case _: StringType => Some("String")
-      case _: LongType => Some("Double")
-      case _: IntegerType => Some("Int")
-      case _: FloatType => Some("Float")
-      case _: DoubleType => Some("Double")
-      case _: BooleanType => Some("Boolean")
+      case _: StringType    => Some("String")
+      case _: LongType      => Some("Double")
+      case _: IntegerType   => Some("Int")
+      case _: FloatType     => Some("Float")
+      case _: DoubleType    => Some("Double")
+      case _: BooleanType   => Some("Boolean")
       case _: TimestampType => Some("js.Date")
-      case _: BlobType => Some("nodejs.buffer.Buffer | nodejs.stream.Readable | js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
-      case _: EnumType => Some("String")
+      case _: BlobType =>
+        Some("nodejs.buffer.Buffer | nodejs.stream.Readable | js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
+      case _: EnumType      => Some("String")
       case shape: ShapeType => primitive2Scala.get(shape.shape).orElse(Some(shape.shape))
-      case map: MapType => Some(s"js.Dictionary[${className(map.value).get}]")
-      case list: ListType => Some(s"js.Array[${className(list.member).get}]")
-      case _ => None
+      case map: MapType     => Some(s"js.Dictionary[${className(map.value).get}]")
+      case list: ListType   => Some(s"js.Array[${className(list.member).get}]")
+      case _                => None
     }
   }
 
   private def cleanName(name: String): String = {
     if (name.exists { char =>
-      !char.isLetterOrDigit && char != '_'
-    } || !name.head.isLetter
-      || ScalaJsGen.scalaKeywords.contains(name)) {
+          !char.isLetterOrDigit && char != '_'
+        } || !name.head.isLetter
+        || ScalaJsGen.scalaKeywords.contains(name)) {
       "`" + name + "`"
     } else {
       name
@@ -216,9 +225,9 @@ class ScalaJsGen(
   }
 
   private val primitive2Scala: Map[String, String] = Map(
-    "int" -> "Int",
+    "int"     -> "Int",
     "Integer" -> "Int",
-    "Long" -> "Double"
+    "Long"    -> "Double"
   )
 
   private def genShapeTypeRef(shapeName: String, shapeType: AwsApiType): Option[String] = {
@@ -232,7 +241,9 @@ class ScalaJsGen(
   }
 
   /** Adds the new type recursively to the previously resolved types. */
-  private def genTypesRecursive(name: String, definition: AwsApiType, resolvedTypes: Map[String, String] = Map()): Map[String, String] = {
+  private def genTypesRecursive(name: String,
+                                definition: AwsApiType,
+                                resolvedTypes: Map[String, String] = Map()): Map[String, String] = {
     if (resolvedTypes.contains(name)) {
       return resolvedTypes
     }
@@ -240,14 +251,8 @@ class ScalaJsGen(
     val typeName = className(definition).getOrElse(name)
 
     definition match {
-      case _: StringType |
-        _: LongType |
-        _: IntegerType |
-        _: FloatType |
-        _: DoubleType |
-        _: BooleanType |
-        _: TimestampType |
-        _: BlobType => {
+      case _: StringType | _: LongType | _: IntegerType | _: FloatType | _: DoubleType | _: BooleanType |
+          _: TimestampType | _: BlobType => {
         // true primitive types require no recursive generation
 
         resolvedTypes
@@ -282,10 +287,12 @@ class ScalaJsGen(
         })
 
         val memberFields = error.members.fold("") { members =>
-          members.map {
-            case (memberName, memberType) =>
-              s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
-          }.mkString("\n")
+          members
+            .map {
+              case (memberName, memberType) =>
+                s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
+            }
+            .mkString("\n")
         }
 
         val errorDefinition =
@@ -300,7 +307,7 @@ class ScalaJsGen(
         genTypesRecursive(name + "Item", list.member, resolvedTypes)
       }
       case map: MapType => {
-        val withKey = genTypesRecursive(name + "Key", map.key, resolvedTypes)
+        val withKey   = genTypesRecursive(name + "Key", map.key, resolvedTypes)
         val withValue = genTypesRecursive(name + "Value", map.value, withKey)
 
         withValue
@@ -316,44 +323,50 @@ class ScalaJsGen(
           case (memberName, _) =>
             (
               !requiredFields(memberName), // required member first, optional second
-              memberName // alphabetical
+              memberName                   // alphabetical
             )
         })
 
         val memberFields = sortedMembers.fold("") { members =>
-          members.map {
-            case (memberName, memberType) =>
-              val memberType_ = if (requiredFields(memberName)) {
-                s"${className(memberType).getOrElse(memberName)}"
-              } else {
-                s"js.UndefOr[${className(memberType).getOrElse(memberName)}]"
-              }
-              s"""  var ${cleanName(memberName)}: ${memberType_}"""
-          }.mkString("\n")
+          members
+            .map {
+              case (memberName, memberType) =>
+                val memberType_ = if (requiredFields(memberName)) {
+                  s"${className(memberType).getOrElse(memberName)}"
+                } else {
+                  s"js.UndefOr[${className(memberType).getOrElse(memberName)}]"
+                }
+                s"""  var ${cleanName(memberName)}: ${memberType_}"""
+            }
+            .mkString("\n")
         }
 
         val constructorArgs = sortedMembers.fold("") { members =>
-          members.map {
-            case (memberName, memberType) =>
-              val memberType_ = if (requiredFields(memberName)) {
-                s"${className(memberType).getOrElse(memberName)}"
-              } else {
-                s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
-              }
-              s"""    ${cleanName(memberName)}: ${memberType_}"""
-          }.mkString(",\n")
+          members
+            .map {
+              case (memberName, memberType) =>
+                val memberType_ = if (requiredFields(memberName)) {
+                  s"${className(memberType).getOrElse(memberName)}"
+                } else {
+                  s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
+                }
+                s"""    ${cleanName(memberName)}: ${memberType_}"""
+            }
+            .mkString(",\n")
         }
-        
+
         val fieldMapping = sortedMembers.fold("") { members =>
-          members.map {
-            case (memberName, memberType) =>
-              val memberType_ = if (requiredFields(memberName)) {
-                s"${cleanName(memberName)}.asInstanceOf[js.Any]"
-              } else {
-                s"${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"
-              }
-              s"""      "${cleanName(memberName)}" -> ${memberType_}"""
-          }.mkString(",\n")
+          members
+            .map {
+              case (memberName, memberType) =>
+                val memberType_ = if (requiredFields(memberName)) {
+                  s"${cleanName(memberName)}.asInstanceOf[js.Any]"
+                } else {
+                  s"${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"
+                }
+                s"""      "${cleanName(memberName)}" -> ${memberType_}"""
+            }
+            .mkString(",\n")
         }
 
         val traitDefinition =
@@ -429,7 +442,8 @@ object ScalaJsGen {
     "val",
     "var",
     "while",
-    "with")
+    "with"
+  )
 
   def main(args: Array[String]): Unit = {
     import Apis._
@@ -453,24 +467,25 @@ object ScalaJsGen {
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-    val types = apiVersions.map {
-      case (name, version) =>
-        val text = json(name, version, ApiType.normal)
-        val parsedText = parse(text)
-        val api = parsedText.extract[Api]
-        val gen = new ScalaJsGen(projectDir, api)
-        gen.gen()
+    val types = apiVersions
+      .map {
+        case (name, version) =>
+          val text       = json(name, version, ApiType.normal)
+          val parsedText = parse(text)
+          val api        = parsedText.extract[Api]
+          val gen        = new ScalaJsGen(projectDir, api)
+          gen.gen()
 
-        val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
-        s"""  type ${gen.serviceClassName} = ${qualifiedName}
+          val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
+          s"""  type ${gen.serviceClassName} = ${qualifiedName}
            |  def ${gen.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
            |  def ${gen.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
            |""".stripMargin
-    }.mkString("\n")
+      }
+      .mkString("\n")
 
     try {
-      awsWriter.append(
-        s"""package facade.amazonaws
+      awsWriter.append(s"""package facade.amazonaws
            |
            |import scala.scalajs.js
            |import scala.scalajs.js.annotation.JSImport
