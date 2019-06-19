@@ -25,8 +25,8 @@ object Apis {
 
   sealed abstract trait ApiType
   object ApiType {
-    case object min extends ApiType
-    case object normal extends ApiType
+    case object min        extends ApiType
+    case object normal     extends ApiType
     case object paginators extends ApiType
   }
 

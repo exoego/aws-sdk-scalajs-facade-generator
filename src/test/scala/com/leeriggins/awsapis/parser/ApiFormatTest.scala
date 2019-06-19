@@ -4,10 +4,9 @@ import org.scalatest._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization._
-import com.leeriggins.awsapis.Apis.{ versions => apiVersions }
+import com.leeriggins.awsapis.Apis.{versions => apiVersions}
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.parser.Apis._
-
 
 class ApiFormatTest extends WordSpec with Matchers {
   implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
@@ -16,7 +15,7 @@ class ApiFormatTest extends WordSpec with Matchers {
     apiVersions.foreach {
       case (apiName, apiVersion) =>
         s"deserialize then serialize ${apiName} version ${apiVersion} (${tpe}) without changes" in {
-          val text = Apis.json(apiName, apiVersion, tpe)
+          val text       = Apis.json(apiName, apiVersion, tpe)
           val parsedText = parse(text)
 
           val api = parsedText.extract[Api]
