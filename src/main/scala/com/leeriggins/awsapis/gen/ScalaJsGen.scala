@@ -111,7 +111,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
        |${serviceDefinition()}
        |
        |${allTypes.toIndexedSeq.sorted
-         .map(_._2)
+         .map { case (_, resolvedType) => resolvedType }
          .mkString("\n\n")
          .split('\n')
          .map { line =>
