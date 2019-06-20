@@ -4,6 +4,7 @@ import org.json4s._
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 
+import scala.reflect.ClassTag
 import scala.util.Try
 
 object FieldUtils {
@@ -96,6 +97,15 @@ object FieldUtils {
   }
 }
 
+object Helper {
+  def decompose[T <: JValue](e: Any)(implicit formats: Formats, tag: ClassTag[T]): T = {
+    Extraction.decompose(e) match {
+      case t: T => t
+      case _    => throw new Exception(s"${e} unmatched to ${tag}")
+    }
+  }
+}
+
 object InputParser {
   import FieldUtils._
 
@@ -113,10 +123,10 @@ object InputParser {
             case input: Input => {
               val JObject(typeFields) = input.apiType match {
                 case structure: StructureType if (structure.members.isEmpty) => {
-                  val JObject(baseFields) = Extraction.decompose(structure)
+                  val JObject(baseFields) = Helper.decompose[JObject](structure)
                   JObject(baseFields :+ JField("members", JObject(Nil)))
                 }
-                case other => Extraction.decompose(input.apiType)
+                case _ => Helper.decompose[JObject](input.apiType)
               }
 
               val payloadField      = optField("payload", input.payload)
@@ -145,10 +155,10 @@ object OutputParser {
             case output: Output => {
               val JObject(typeFields) = output.apiType match {
                 case structure: StructureType if (structure.members.isEmpty) => {
-                  val JObject(baseFields) = Extraction.decompose(structure)
+                  val JObject(baseFields) = Helper.decompose[JObject](structure)
                   JObject(baseFields :+ JField("members", JObject(Nil)))
                 }
-                case other => Extraction.decompose(other)
+                case other => Helper.decompose[JObject](other)
               }
 
               val resultWrapperField = optField("resultWrapper", output.resultWrapper)

@@ -230,7 +230,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
   /** Adds the new type recursively to the previously resolved types. */
   private def genTypesRecursive(name: String,
                                 definition: AwsApiType,
-                                resolvedTypes: Map[String, String] ): Map[String, String] = {
+                                resolvedTypes: Map[String, String]): Map[String, String] = {
     if (resolvedTypes.contains(name)) {
       return resolvedTypes
     }
