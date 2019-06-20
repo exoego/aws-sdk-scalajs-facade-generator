@@ -1,6 +1,14 @@
 lazy val `aws-sdk-scalajs-generator` = (project in file(".")).settings(
   organization := "net.exoego",
   name := "aws-sdk-scalajs-facade-generator",
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-unchecked",
+    "-feature",
+    "-language:implicitConversions",
+    "-Xlint",
+    "-Xfatal-warnings"
+  ),
   version := "0.0.2",
   scalaVersion := "2.13.0"
 )
