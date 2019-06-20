@@ -6,23 +6,7 @@ import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
 
-import scala.util.matching.Regex
-
 class ScalaJsGen(projectDir: File, api: Api) {
-
-  private def kebab2camel(name: String): String = {
-    def loop(x: List[Char]): List[Char] = (x: @unchecked) match {
-      case '-' :: '-' :: rest => loop('-' :: rest)
-      case '-' :: c :: rest   => Character.toUpperCase(c) :: loop(rest)
-      case '-' :: Nil         => Nil
-      case c :: rest          => c :: loop(rest)
-      case Nil                => Nil
-    }
-    if (name == null)
-      ""
-    else
-      loop('-' :: name.toList).mkString
-  }
 
   private val serviceClassName = api.metadata.serviceId.replaceAll(" ", "") match {
     // special treatment
@@ -55,10 +39,6 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
   private def lowerFirst(str: String): String = {
     str.head.toLower +: str.tail
-  }
-
-  private def upperFirst(str: String): String = {
-    str.head.toUpper +: str.tail
   }
 
   def mkdirs(): Unit = {
@@ -250,7 +230,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
   /** Adds the new type recursively to the previously resolved types. */
   private def genTypesRecursive(name: String,
                                 definition: AwsApiType,
-                                resolvedTypes: Map[String, String] = Map()): Map[String, String] = {
+                                resolvedTypes: Map[String, String] ): Map[String, String] = {
     if (resolvedTypes.contains(name)) {
       return resolvedTypes
     }
@@ -449,7 +429,6 @@ object ScalaJsGen {
   def main(args: Array[String]): Unit = {
     import Apis._
     import org.json4s._
-    import org.json4s.Extraction._
     import org.json4s.jackson.JsonMethods._
     import java.io._
 

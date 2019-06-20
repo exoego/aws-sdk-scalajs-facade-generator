@@ -3,7 +3,6 @@ package com.leeriggins.awsapis.parser
 import org.json4s._
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
-import com.leeriggins.awsapis.parser.Apis.ApiType.min
 
 import scala.util.Try
 

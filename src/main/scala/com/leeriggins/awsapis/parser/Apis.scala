@@ -1,11 +1,9 @@
 package com.leeriggins.awsapis.parser
 
 import org.json4s._
-import org.json4s.Extraction._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization._
 import com.leeriggins.awsapis.models._
-import com.leeriggins.awsapis.models.AwsApiType._
 
 object Apis {
   val path = s"aws-sdk-js/apis"
