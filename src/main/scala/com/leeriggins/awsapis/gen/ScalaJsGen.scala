@@ -43,6 +43,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
   def mkdirs(): Unit = {
     packageDir.mkdirs()
+    ()
   }
 
   def gen(): Unit = {
@@ -485,6 +486,7 @@ object ScalaJsGen {
            |${types}
            |}
          """.stripMargin.trim)
+      ()
     } finally {
       awsWriter.close()
     }
