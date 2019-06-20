@@ -225,9 +225,16 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private val primitive2Scala: Map[String, String] = Map(
+    "bool"    -> "Boolean",
+    "Bool"    -> "Boolean",
+    "boolean" -> "Boolean",
+    "float"   -> "Float",
     "int"     -> "Int",
+    "integer" -> "Int",
     "Integer" -> "Int",
-    "Long"    -> "Double"
+    "long"    -> "Double",
+    "Long"    -> "Double",
+    "string"  -> "String"
   )
 
   private def genShapeTypeRef(shapeName: String, shapeType: AwsApiType): Option[String] = {
