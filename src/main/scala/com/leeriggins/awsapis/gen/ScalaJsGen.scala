@@ -82,7 +82,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def genContents(): String = {
-    val shapeTypeRefs = api.shapes.flatMap {
+    val shapeTypeRefs = api.shapes.toSeq.flatMap {
       case (shapeName, shapeType) =>
         genShapeTypeRef(shapeName, shapeType).map { typeRef =>
           shapeName -> typeRef
@@ -122,16 +122,16 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def serviceDefinition(): String = {
-    val operations = api.operations.map {
+    val operations = api.operations.toSeq.map {
       case (opName, operation) =>
         val outputType = operation.output
           .flatMap { output =>
-            className(output.`type`)
+            className(output.apiType)
           }
           .getOrElse("js.Object")
 
         val parameters = operation.input.fold("") { input =>
-          val inputName = className(input.`type`).get
+          val inputName = className(input.apiType).get
           s"params: ${inputName}"
         }
 

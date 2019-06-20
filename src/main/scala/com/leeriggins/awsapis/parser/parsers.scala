@@ -112,12 +112,12 @@ object InputParser {
             }
           }, {
             case input: Input => {
-              val JObject(typeFields) = input.`type` match {
+              val JObject(typeFields) = input.apiType match {
                 case structure: StructureType if (structure.members.isEmpty) => {
                   val JObject(baseFields) = Extraction.decompose(structure)
                   JObject(baseFields :+ JField("members", JObject(Nil)))
                 }
-                case other => Extraction.decompose(input.`type`)
+                case other => Extraction.decompose(input.apiType)
               }
 
               val payloadField      = optField("payload", input.payload)
@@ -144,7 +144,7 @@ object OutputParser {
             }
           }, {
             case output: Output => {
-              val JObject(typeFields) = output.`type` match {
+              val JObject(typeFields) = output.apiType match {
                 case structure: StructureType if (structure.members.isEmpty) => {
                   val JObject(baseFields) = Extraction.decompose(structure)
                   JObject(baseFields :+ JField("members", JObject(Nil)))

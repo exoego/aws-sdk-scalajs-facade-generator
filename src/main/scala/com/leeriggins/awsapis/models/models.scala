@@ -67,10 +67,10 @@ case class ErrorInfo(code: Option[String], httpStatusCode: Option[Int], senderFa
 case class Http(method: Option[String], requestUri: Option[String], responseCode: Option[Int])
 
 /** Describes the input type of a method. */
-case class Input(payload: Option[String], `type`: AwsApiType, xmlNamespace: Option[XmlNamespace])
+case class Input(payload: Option[String], apiType: AwsApiType, xmlNamespace: Option[XmlNamespace])
 
 /** Describes the output type of a method. */
-case class Output(resultWrapper: Option[String], payload: Option[String], `type`: AwsApiType)
+case class Output(resultWrapper: Option[String], payload: Option[String], apiType: AwsApiType)
 
 case class XmlNamespace(uri: Option[String], prefix: Option[String])
 
