@@ -121,7 +121,12 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
         val methodName = lowerFirst(opName)
         val arg        = operation.input.map(_ => "params").getOrElse("")
-        s"""    def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise.toFuture"""
+        // Don't generate extension method for deprecated API
+        operation.deprecated match {
+          case Some(true) => ""
+          case _ =>
+            s"  def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise.toFuture"
+        }
     }
 
     s"""  implicit final class ${serviceClassName}Ops(val service: ${serviceClassName}) extends AnyVal {
@@ -143,8 +148,12 @@ class ScalaJsGen(projectDir: File, api: Api) {
           val inputName = className(input.apiType).get
           s"params: ${inputName}"
         }
+        val deprecated = operation.deprecated.fold("") { dep =>
+          if (dep) s"""@deprecated("${operation.deprecatedMessage.getOrElse("Deprecated in AWS SDK")}", "forever")"""
+          else ""
+        }
 
-        s"""    def ${lowerFirst(opName)}(${parameters}): Request[${outputType}] = js.native"""
+        s"""  ${deprecated} def ${lowerFirst(opName)}(${parameters}): Request[${outputType}] = js.native"""
     }
 
     s"""  @js.native
@@ -195,7 +204,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
 
     val deprecation = awsApiType.deprecated.flatMap { dep =>
-      if (dep) Some("@deprecated") else None
+      if (dep) Some(s"""@deprecated("${awsApiType.deprecatedMessage.getOrElse("Deprecated in AWS SDK")}", "forever")""")
+      else None
     }
 
     val jsNative = if (isJsNative) Some("@js.native") else None
