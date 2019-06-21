@@ -121,7 +121,12 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
         val methodName = lowerFirst(opName)
         val arg        = operation.input.map(_ => "params").getOrElse("")
-        s"""    def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise.toFuture"""
+        // Don't generate extension method for deprecated API
+        operation.deprecated match {
+          case Some(true) => ""
+          case _ =>
+            s"  def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise.toFuture"
+        }
     }
 
     s"""  implicit final class ${serviceClassName}Ops(val service: ${serviceClassName}) extends AnyVal {
