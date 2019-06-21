@@ -81,11 +81,14 @@ class ScalaJsGen(projectDir: File, api: Api) {
        |import scalajs._
        |import scalajs.js.annotation.JSImport
        |import scala.scalajs.js.|
+       |import scala.concurrent.Future
        |import io.scalajs.nodejs
        |import facade.amazonaws._
        |
        |package object ${scalaServiceName} {
        |${shapeTypeRefs.toIndexedSeq.sorted.map("  " + _._2).mkString("\n")}
+       |
+       |${futureExtensionMethodDefinition()}
        |}
        |
        |package ${scalaServiceName} {
@@ -100,6 +103,31 @@ class ScalaJsGen(projectDir: File, api: Api) {
          }
          .mkString("\n")}
        |}""".stripMargin
+  }
+
+  private def futureExtensionMethodDefinition(): String = {
+    val operations = api.operations.toSeq.map {
+      case (opName, operation) =>
+        val outputType = operation.output
+          .flatMap { output =>
+            className(output.apiType)
+          }
+          .getOrElse("js.Object")
+
+        val parameters = operation.input.fold("") { input =>
+          val inputName = className(input.apiType).get
+          s"params: ${inputName}"
+        }
+
+        val methodName = lowerFirst(opName)
+        val arg        = operation.input.map(_ => "params").getOrElse("")
+        s"""    def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise.toFuture"""
+    }
+
+    s"""  implicit final class ${serviceClassName}Ops(val service: ${serviceClassName}) extends AnyVal {
+       |
+       |${operations.toIndexedSeq.sorted.mkString("\n")}
+       |  }""".stripMargin
   }
 
   private def serviceDefinition(): String = {
