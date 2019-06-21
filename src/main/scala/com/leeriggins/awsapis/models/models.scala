@@ -1,8 +1,5 @@
 package com.leeriggins.awsapis.models
 
-import com.leeriggins.awsapis.parser.Apis.ApiType.min
-import org.json4s._
-
 /** The API for a single AWS service like AutoScaling or EC2. */
 case class Api(version: Option[String],
                metadata: Metadata,
