@@ -8,13 +8,13 @@ import com.leeriggins.awsapis.Apis.{versions => apiVersions}
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.parser.Apis._
 
-class ApiFormatTest extends WordSpec with Matchers {
+class ApiFormatTest extends FunSpec {
   implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
   def passTestsForType(tpe: ApiType): Unit = {
     apiVersions.foreach {
       case (apiName, apiVersion) =>
-        s"deserialize then serialize ${apiName} version ${apiVersion} (${tpe}) without changes" in {
+        it(s"deserialize then serialize ${apiName} version ${apiVersion} (${tpe}) without changes") {
           val text       = Apis.json(apiName, apiVersion, tpe)
           val parsedText = parse(text)
 
@@ -23,14 +23,19 @@ class ApiFormatTest extends WordSpec with Matchers {
           val reserialized = parse(write(api))
 
           val Diff(changed, added, removed) = parsedText diff reserialized
-          changed should be(JNothing)
-          added should be(JNothing)
-          removed should be(JNothing)
+          assert(changed == JNothing)
+          assert(added == JNothing)
+          assert(removed == JNothing)
         }
     }
 
   }
 
-  "The Api normal format" should passTestsForType(ApiType.normal)
-  "The Api min format" should passTestsForType(ApiType.min)
+  describe("The Api normal format") {
+    passTestsForType(ApiType.normal)
+  }
+
+  describe("The Api min format") {
+    passTestsForType(ApiType.min)
+  }
 }
