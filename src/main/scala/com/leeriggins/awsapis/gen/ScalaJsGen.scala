@@ -478,8 +478,7 @@ object ScalaJsGen {
       projectDir.mkdirs()
     }
 
-    val apiVersions = com.leeriggins.awsapis.Apis.versions
-
+    val apiVersions    = com.leeriggins.awsapis.Apis.versions
     val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
     packageRootDir.mkdirs()
     val awsFile = new File(packageRootDir, s"AWS.scala")
@@ -492,7 +491,8 @@ object ScalaJsGen {
           val text       = json(name, version, ApiType.normal)
           val parsedText = parse(text)
           val api        = parsedText.extract[Api]
-          val gen        = new ScalaJsGen(projectDir, api)
+          val subDir     = new File(projectDir, s"services/$name")
+          val gen        = new ScalaJsGen(subDir, api)
           gen.gen()
 
           val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
