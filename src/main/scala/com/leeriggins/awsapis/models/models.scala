@@ -7,7 +7,33 @@ case class Api(version: Option[String],
                operations: Map[String, Operation],
                shapes: Map[String, AwsApiType],
                examples: Option[Examples],
-               authorizers: Option[Map[String, Authorizer]] = None)
+               authorizers: Option[Map[String, Authorizer]] = None) {
+  val serviceClassName: String = this.metadata.serviceId.replaceAll(" ", "") match {
+    // special treatment
+    case "ApplicationDiscoveryService" => "ApplicationDiscovery"
+    case "Budgets"                     => "BudgetsService"
+    case "CostandUsageReportService"   => "CUR"
+    case "DatabaseMigrationService"    => "DMS"
+    case "ElasticLoadBalancing"        => "ELB"
+    case "ElasticLoadBalancingv2"      => "ELBv2"
+    case "ElasticsearchService"        => "ES"
+    case "IoT"                         => "Iot"
+    case "LexRuntimeService"           => "LexRuntime"
+    case "mq"                          => "MQ"
+    case "RDSData"                     => "RDSDataService"
+    case "SFN"                         => "StepFunctions"
+    case "signer"                      => "Signer"
+    case "Transcribe"                  => "TranscribeService"
+    case otherwise                     => otherwise
+  }
+
+  val sdkClassName = serviceClassName match {
+    case "ApplicationDiscovery"    => "Discovery"
+    case "BudgetsService"          => "Budgets"
+    case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
+    case otherwise                 => otherwise
+  }
+}
 
 case class Authorizer(name: String, `type`: String, placement: AuthorizerPlacement)
 

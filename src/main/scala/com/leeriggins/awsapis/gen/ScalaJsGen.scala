@@ -7,32 +7,7 @@ import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
 
 class ScalaJsGen(projectDir: File, api: Api) {
-
-  private val serviceClassName = api.metadata.serviceId.replaceAll(" ", "") match {
-    // special treatment
-    case "ApplicationDiscoveryService" => "ApplicationDiscovery"
-    case "Budgets"                     => "BudgetsService"
-    case "CostandUsageReportService"   => "CUR"
-    case "DatabaseMigrationService"    => "DMS"
-    case "ElasticLoadBalancing"        => "ELB"
-    case "ElasticLoadBalancingv2"      => "ELBv2"
-    case "ElasticsearchService"        => "ES"
-    case "IoT"                         => "Iot"
-    case "LexRuntimeService"           => "LexRuntime"
-    case "mq"                          => "MQ"
-    case "RDSData"                     => "RDSDataService"
-    case "SFN"                         => "StepFunctions"
-    case "signer"                      => "Signer"
-    case "Transcribe"                  => "TranscribeService"
-    case otherwise                     => otherwise
-  }
-  private val sdkClassName = serviceClassName match {
-    case "ApplicationDiscovery"    => "Discovery"
-    case "BudgetsService"          => "Budgets"
-    case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
-    case otherwise                 => otherwise
-  }
-  private val scalaServiceName: String = serviceClassName.toLowerCase
+  private val scalaServiceName: String = api.serviceClassName.toLowerCase
 
   val sourceDir  = new File(projectDir, "src/main/scala")
   val packageDir = new File(sourceDir, s"facade/amazonaws/services")
@@ -50,7 +25,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
     import java.io._
 
     mkdirs()
-    val f = new File(packageDir, serviceClassName + ".scala")
+    val f = new File(packageDir, api.serviceClassName + ".scala")
     f.createNewFile()
 
     val writer = new PrintWriter(new FileWriter(f))
@@ -129,7 +104,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         }
     }
 
-    s"""  implicit final class ${serviceClassName}Ops(val service: ${serviceClassName}) extends AnyVal {
+    s"""  implicit final class ${api.serviceClassName}Ops(val service: ${api.serviceClassName}) extends AnyVal {
        |
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
@@ -157,8 +132,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
 
     s"""  @js.native
-       |  @JSImport("aws-sdk", "${sdkClassName}")
-       |  class ${serviceClassName}() extends js.Object {
+       |  @JSImport("aws-sdk", "${api.sdkClassName}")
+       |  class ${api.serviceClassName}() extends js.Object {
        |    def this(config: AWSConfig) = this()
        |
        |${operations.toIndexedSeq.sorted.mkString("\n")}
@@ -401,7 +376,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
          |trait ${typeName} extends js.Object {
          |${memberFields}
          |}""".stripMargin
-    val insertFile = new File(s"src/main/resources/${serviceClassName}", s"${typeName}.scala")
+    val insertFile = new File(s"src/main/resources/${api.serviceClassName}", s"${typeName}.scala")
     val insertContent = if (insertFile.exists()) {
       val source = io.Source.fromFile(insertFile, "UTF-8")
       try {
@@ -478,8 +453,7 @@ object ScalaJsGen {
       projectDir.mkdirs()
     }
 
-    val apiVersions = com.leeriggins.awsapis.Apis.versions
-
+    val apiVersions    = com.leeriggins.awsapis.Apis.versions
     val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
     packageRootDir.mkdirs()
     val awsFile = new File(packageRootDir, s"AWS.scala")
@@ -492,13 +466,14 @@ object ScalaJsGen {
           val text       = json(name, version, ApiType.normal)
           val parsedText = parse(text)
           val api        = parsedText.extract[Api]
-          val gen        = new ScalaJsGen(projectDir, api)
+          val subDir     = new File(projectDir, s"services/${api.serviceClassName.toLowerCase()}")
+          val gen        = new ScalaJsGen(subDir, api)
           gen.gen()
 
-          val qualifiedName = s"services.${gen.scalaServiceName}.${gen.serviceClassName}"
-          s"""  type ${gen.serviceClassName} = ${qualifiedName}
-           |  def ${gen.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
-           |  def ${gen.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
+          val qualifiedName = s"services.${gen.scalaServiceName}.${api.serviceClassName}"
+          s"""  type ${api.serviceClassName} = ${qualifiedName}
+           |  def ${api.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
+           |  def ${api.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
            |""".stripMargin
       }
       .mkString("\n")
