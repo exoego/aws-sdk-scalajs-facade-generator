@@ -234,7 +234,14 @@ class ScalaJsGen(projectDir: File, api: Api) {
   private def genShapeTypeRef(shapeName: String, shapeType: AwsApiType): Option[String] = {
     className(shapeType).flatMap { className =>
       if (shapeName != className && !primitive2Scala.contains(shapeName)) {
-        Some(s"""type ${shapeName} = ${className}""")
+        val deprecated = shapeType.deprecated.contains(true) match {
+          case true =>
+            val message = shapeType.deprecatedMessage.getOrElse("Deprecated in AWS SDK")
+            s"""@deprecated("${message}", "forever")
+              |""".stripMargin
+          case false => ""
+        }
+        Some(s"""${deprecated} type ${shapeName} = ${className}""")
       } else {
         None
       }
