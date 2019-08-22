@@ -440,7 +440,7 @@ object ScalaJsGen {
     "with"
   )
 
-  def main(args: Array[String]): Unit = {
+  def generatePackageFile(): Unit = {
     import Apis._
     import org.json4s._
     import org.json4s.jackson.JsonMethods._
@@ -472,31 +472,35 @@ object ScalaJsGen {
 
           val qualifiedName = s"services.${gen.scalaServiceName}.${api.serviceClassName}"
           s"""    type ${api.serviceClassName} = ${qualifiedName}
-           |    def ${api.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
-           |    def ${api.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
-           |""".stripMargin
+             |    def ${api.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
+             |    def ${api.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
+             |""".stripMargin
       }
       .mkString("\n")
 
     try {
       awsWriter.append(s"""package facade
-           |
-           |package object amazonaws {
-           |  implicit final class AWSExtensionMethods(val aws: AWS.type) extends AnyVal {
-           |    def config_=(config: AWSConfig): Unit = {
-           |      aws.config = config match {
-           |        case global: AWSConfigWithServicesDefault => global
-           |        case _                                    => config.asInstanceOf[AWSConfigWithServicesDefault]
-           |      }
-           |    }
-           |
-           |${types}
-           |  }
-           |}
+                          |
+                          |package object amazonaws {
+                          |  implicit final class AWSExtensionMethods(val aws: AWS.type) extends AnyVal {
+                          |    def config_=(config: AWSConfig): Unit = {
+                          |      aws.config = config match {
+                          |        case global: AWSConfigWithServicesDefault => global
+                          |        case _                                    => config.asInstanceOf[AWSConfigWithServicesDefault]
+                          |      }
+                          |    }
+                          |
+                          |${types}
+                          |  }
+                          |}
          """.stripMargin.trim)
       ()
     } finally {
       awsWriter.close()
     }
+  }
+
+  def main(args: Array[String]): Unit = {
+    generatePackageFile()
   }
 }
