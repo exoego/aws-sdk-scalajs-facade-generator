@@ -500,7 +500,57 @@ object ScalaJsGen {
     }
   }
 
+  def generateAWSConfigWithServicesDefault(): Unit = {
+    import Apis._
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import java.io._
+
+    implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
+
+    val projectDir = new File("../aws-sdk-scalajs-facade/core")
+    if (!projectDir.exists()) {
+      projectDir.mkdirs()
+    }
+
+    val apiVersions    = com.leeriggins.awsapis.Apis.versions
+    val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
+    packageRootDir.mkdirs()
+    val awsFile = new File(packageRootDir, s"AWSConfigWithServicesDefault.scala")
+    awsFile.createNewFile()
+    val awsWriter = new PrintWriter(new FileWriter(awsFile))
+
+    val types = apiVersions
+      .map {
+        case (name, version) =>
+          val text       = json(name, version, ApiType.normal)
+          val parsedText = parse(text)
+          val api        = parsedText.extract[Api]
+          api.sdkClassName.toLowerCase
+      }
+      .sorted
+      .map { sdkClassName =>
+        s"  var ${sdkClassName}: js.UndefOr[ParamsWithEndpoint] = js.undefined"
+      }
+      .mkString("\n")
+
+    try {
+      awsWriter.append(s"""package facade.amazonaws
+                          |
+                          |import scala.scalajs.js
+                          |
+                          |class AWSConfigWithServicesDefault extends AWSConfig {
+                          |${types}
+                          |}
+                          |""".stripMargin.trim)
+      ()
+    } finally {
+      awsWriter.close()
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     generatePackageFile()
+    generateAWSConfigWithServicesDefault()
   }
 }
