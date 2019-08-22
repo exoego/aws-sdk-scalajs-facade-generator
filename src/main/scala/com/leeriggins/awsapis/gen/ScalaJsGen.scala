@@ -448,7 +448,7 @@ object ScalaJsGen {
 
     implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
-    val projectDir = new File("../aws-sdk-scalajs-facade/")
+    val projectDir = new File("../aws-sdk-scalajs-facade/all")
     if (!projectDir.exists()) {
       projectDir.mkdirs()
     }
@@ -456,7 +456,7 @@ object ScalaJsGen {
     val apiVersions    = com.leeriggins.awsapis.Apis.versions
     val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
     packageRootDir.mkdirs()
-    val awsFile = new File(packageRootDir, s"AWS.scala")
+    val awsFile = new File(packageRootDir, s"package.scala")
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
@@ -471,32 +471,27 @@ object ScalaJsGen {
           gen.gen()
 
           val qualifiedName = s"services.${gen.scalaServiceName}.${api.serviceClassName}"
-          s"""  type ${api.serviceClassName} = ${qualifiedName}
-           |  def ${api.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
-           |  def ${api.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
+          s"""    type ${api.serviceClassName} = ${qualifiedName}
+           |    def ${api.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
+           |    def ${api.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
            |""".stripMargin
       }
       .mkString("\n")
 
     try {
-      awsWriter.append(s"""package facade.amazonaws
+      awsWriter.append(s"""package facade
            |
-           |import scala.scalajs.js
-           |import scala.scalajs.js.annotation.JSImport
-           |
-           |@js.native
-           |@JSImport("aws-sdk", JSImport.Namespace)
-           |private[amazonaws] object AWSGlobal extends js.Object {
-           |  var config: AWSConfig = js.native
-           |}
-           |
-           |object AWS extends js.Object {
-           |  def config: AWSConfig = AWSGlobal.config
-           |  def config_=(config: AWSConfig): Unit = {
-           |    AWSGlobal.config = config
-           |  }
+           |package object amazonaws {
+           |  implicit final class AWSExtensionMethods(val aws: AWS.type) extends AnyVal {
+           |    def config_=(config: AWSConfig): Unit = {
+           |      aws.config = config match {
+           |        case global: AWSConfigWithServicesDefault => global
+           |        case _                                    => config.asInstanceOf[AWSConfigWithServicesDefault]
+           |      }
+           |    }
            |
            |${types}
+           |  }
            |}
          """.stripMargin.trim)
       ()
