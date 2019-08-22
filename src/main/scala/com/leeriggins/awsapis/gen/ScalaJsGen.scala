@@ -448,15 +448,16 @@ object ScalaJsGen {
 
     implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
-    val projectDir = new File("../aws-sdk-scalajs-facade/all")
-    if (!projectDir.exists()) {
+    val projectDir = new File("../aws-sdk-scalajs-facade")
+    val allDir     = new File(projectDir, "all")
+    if (!allDir.exists()) {
       projectDir.mkdirs()
     }
 
     val apiVersions    = com.leeriggins.awsapis.Apis.versions
-    val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
-    packageRootDir.mkdirs()
-    val awsFile = new File(packageRootDir, s"package.scala")
+    val allPackageRoot = new File(allDir, s"src/main/scala/facade/amazonaws")
+    allPackageRoot.mkdirs()
+    val awsFile = new File(allPackageRoot, s"package.scala")
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
