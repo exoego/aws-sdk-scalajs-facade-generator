@@ -366,7 +366,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         |""".stripMargin
     }
     val optionalFields = sortedMembers.fold("")(
-      _.filterNot(d => requiredFields(d._1))
+      _.filterNot { case (memberName, _) => requiredFields(memberName) }
         .map {
           case (memberName, _) =>
             val clean = cleanName(memberName)
