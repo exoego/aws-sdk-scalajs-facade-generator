@@ -338,12 +338,12 @@ class ScalaJsGen(projectDir: File, api: Api) {
                                           requiredFields: Set[String]) = {
     sortedMembers.fold("")(_.map {
       case (memberName, memberType) =>
-        val memberType_ = if (requiredFields(memberName)) {
+        val memberTypeStr = if (requiredFields(memberName)) {
           s"${className(memberType).getOrElse(memberName)}"
         } else {
           s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
         }
-        s"""    ${cleanName(memberName)}: ${memberType_}"""
+        s"""    ${cleanName(memberName)}: ${memberTypeStr}"""
     }.mkString(",\n"))
   }
 
@@ -356,8 +356,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
         case (memberName, _) => requiredFields(memberName)
       }.map {
           case (memberName, _) =>
-            val memberType_ = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
-            s"""      "${memberName}" -> ${memberType_}"""
+            val memberType = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
+            s"""      "${memberName}" -> ${memberType}"""
         }
         .mkString(",\n"))
       s"""val __obj = js.Dictionary[js.Any](
