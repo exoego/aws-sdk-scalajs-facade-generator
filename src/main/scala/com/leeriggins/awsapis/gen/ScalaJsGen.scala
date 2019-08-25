@@ -238,7 +238,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
           case true =>
             val message = shapeType.deprecatedMessage.getOrElse("Deprecated in AWS SDK")
             s"""@deprecated("${message}", "forever")
-              |""".stripMargin
+               |""".stripMargin
           case false => ""
         }
         Some(s"""${deprecated} type ${shapeName} = ${className}""")
@@ -295,7 +295,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
          |object ${name}Enum {
          |${symbolDefinitions.mkString("\n")}
          |
-             |${valuesList}
+         |${valuesList}
          |}""".stripMargin
 
     resolvedTypes + (name -> (enumDefinition))
@@ -347,17 +347,36 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }.mkString(",\n"))
   }
 
-  private def genStructureFieldMapping(sortedMembers: Option[Seq[(String, AwsApiType)]],
-                                       requiredFields: Set[String]) = {
-    sortedMembers.fold("")(_.map {
-      case (memberName, _) =>
-        val memberType_ = if (requiredFields(memberName)) {
-          s"${cleanName(memberName)}.asInstanceOf[js.Any]"
-        } else {
-          s"${cleanName(memberName)}.map { x => x.asInstanceOf[js.Any] }"
+  private def genStructureObjectConstruction(sortedMembers: Option[Seq[(String, AwsApiType)]],
+                                             requiredFields: Set[String]) = {
+    val instanceWithRequiredFields = if (requiredFields.isEmpty) {
+      "val __obj = js.Dictionary.empty[js.Any]"
+    } else {
+      val requiredFieldsStr = sortedMembers.fold("")(_.filter {
+        case (memberName, _) => requiredFields(memberName)
+      }.map {
+          case (memberName, _) =>
+            val memberType_ = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
+            s"""      "${memberName}" -> ${memberType_}"""
         }
-        s"""      "${cleanName(memberName)}" -> ${memberType_}"""
-    }.mkString(",\n"))
+        .mkString(",\n"))
+      s"""val __obj = js.Dictionary[js.Any](
+        |  ${requiredFieldsStr}
+        |)
+        |""".stripMargin
+    }
+    val optionalFields = sortedMembers.fold("")(
+      _.filterNot(d => requiredFields(d._1))
+        .map {
+          case (memberName, _) =>
+            val clean = cleanName(memberName)
+            s"""  ${clean}.foreach(__v => __obj.update("${memberName}", __v.asInstanceOf[js.Any]))"""
+        }
+        .mkString("\n")
+    )
+
+    s"""${instanceWithRequiredFields}
+      |${optionalFields}""".stripMargin
   }
 
   private def requiredAndAlphabetical(requiredFields: Set[String]): ((String, AwsApiType)) => (Boolean, String) = {
@@ -377,7 +396,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
     val sortedMembers   = structure.members.map(_.toSeq.sortBy(requiredAndAlphabetical(requiredFields)))
     val memberFields    = genStructureMemberFields(sortedMembers, requiredFields)
     val constructorArgs = genStructureConstructorArgs(sortedMembers, requiredFields)
-    val fieldMapping    = genStructureFieldMapping(sortedMembers, requiredFields)
+    val objConstruction = genStructureObjectConstruction(sortedMembers, requiredFields)
     val traitDefinition =
       s"""${docsAndAnnotation(structure, typeName)}
          |trait ${typeName} extends js.Object {
@@ -399,11 +418,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
          |  def apply(
          |${constructorArgs}
          |  ): ${typeName} = {
-         |    val _fields = IndexedSeq[(String, js.Any)](
-         |${fieldMapping}
-         |    ).filter(_._2 != (js.undefined : js.Any))
-         |
-         |    js.Dynamic.literal.applyDynamicNamed("apply")(_fields: _*).asInstanceOf[${typeName}]
+         |${objConstruction}
+         |    __obj.asInstanceOf[${typeName}]
          |  }
          |${insertContent}}""".stripMargin
 
@@ -488,19 +504,19 @@ object ScalaJsGen {
 
     try {
       awsWriter.append(s"""package facade
-                          |
-                          |package object amazonaws {
-                          |  implicit final class AWSExtensionMethods(val aws: AWS.type) extends AnyVal {
-                          |    def config_=(config: AWSConfig): Unit = {
-                          |      aws.config = config match {
-                          |        case global: AWSConfigWithServicesDefault => global
-                          |        case _                                    => config.asInstanceOf[AWSConfigWithServicesDefault]
-                          |      }
-                          |    }
-                          |
-                          |${types}
-                          |  }
-                          |}
+           |
+           |package object amazonaws {
+           |  implicit final class AWSExtensionMethods(val aws: AWS.type) extends AnyVal {
+           |    def config_=(config: AWSConfig): Unit = {
+           |      aws.config = config match {
+           |        case global: AWSConfigWithServicesDefault => global
+           |        case _                                    => config.asInstanceOf[AWSConfigWithServicesDefault]
+           |      }
+           |    }
+           |
+           |${types}
+           |  }
+           |}
          """.stripMargin.trim)
       ()
     } finally {
@@ -544,13 +560,13 @@ object ScalaJsGen {
 
     try {
       awsWriter.append(s"""package facade.amazonaws
-                          |
-                          |import scala.scalajs.js
-                          |
-                          |class AWSConfigWithServicesDefault extends AWSConfig {
-                          |${types}
-                          |}
-                          |""".stripMargin.trim)
+           |
+           |import scala.scalajs.js
+           |
+           |class AWSConfigWithServicesDefault extends AWSConfig {
+           |${types}
+           |}
+           |""".stripMargin.trim)
       ()
     } finally {
       awsWriter.close()
