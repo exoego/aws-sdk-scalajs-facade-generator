@@ -95,6 +95,7 @@ object Apis {
     "iot1click-projects"           -> "2018-05-14",
     "iotanalytics"                 -> "2017-11-27",
     "iotevents"                    -> "2018-07-27",
+    "iotevents-data"               -> "2018-10-23",
     "iotthingsgraph"               -> "2018-09-06",
     "kafka"                        -> "2018-11-14",
     "kinesis"                      -> "2013-12-02",
