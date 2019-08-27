@@ -8,6 +8,7 @@ case class Api(version: Option[String],
                shapes: Map[String, AwsApiType],
                examples: Option[Examples],
                authorizers: Option[Map[String, Authorizer]] = None) {
+  // Used as Class name and file name
   val serviceClassName: String = this.metadata.serviceId.replaceAll(" ", "") match {
     // special treatment
     case "ApplicationDiscoveryService" => "ApplicationDiscovery"
@@ -17,7 +18,10 @@ case class Api(version: Option[String],
     case "ElasticLoadBalancing"        => "ELB"
     case "ElasticLoadBalancingv2"      => "ELBv2"
     case "ElasticsearchService"        => "ES"
+    case "forecast"                    => "Forecast"
+    case "forecastquery"               => "ForecastQuery"
     case "IoT"                         => "Iot"
+    case "IoTDataPlane"                => "IotData"
     case "LexRuntimeService"           => "LexRuntime"
     case "mq"                          => "MQ"
     case "RDSData"                     => "RDSDataService"
@@ -27,10 +31,14 @@ case class Api(version: Option[String],
     case otherwise                     => otherwise
   }
 
+  // Used in @JSImport("aws-sdk", "ForecastService")
   val sdkClassName = serviceClassName match {
     case "ApplicationDiscovery"    => "Discovery"
     case "BudgetsService"          => "Budgets"
     case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
+    case "IoTDataPlane"            => "IotData"
+    case "Forecast"                => "ForecastService"
+    case "ForecastQuery"           => "ForecastQueryService"
     case otherwise                 => otherwise
   }
 }
