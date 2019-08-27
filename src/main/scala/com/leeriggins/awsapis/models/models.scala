@@ -21,6 +21,7 @@ case class Api(version: Option[String],
     case "forecast"                    => "Forecast"
     case "forecastquery"               => "ForecastQuery"
     case "IoT"                         => "Iot"
+    case "IoTDataPlane"                => "IotData"
     case "LexRuntimeService"           => "LexRuntime"
     case "mq"                          => "MQ"
     case "RDSData"                     => "RDSDataService"
@@ -35,8 +36,9 @@ case class Api(version: Option[String],
     case "ApplicationDiscovery"    => "Discovery"
     case "BudgetsService"          => "Budgets"
     case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
-    case "Forecast"                    => "ForecastService"
-    case "ForecastQuery"               => "ForecastQueryService"
+    case "IoTDataPlane"            => "IotData"
+    case "Forecast"                => "ForecastService"
+    case "ForecastQuery"           => "ForecastQueryService"
     case otherwise                 => otherwise
   }
 }
