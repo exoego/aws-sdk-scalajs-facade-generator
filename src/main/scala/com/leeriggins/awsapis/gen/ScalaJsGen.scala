@@ -288,7 +288,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         s"""  val ${symbolName} = "${symbol}""""
     }
 
-    val valuesList = s"""  val values = IndexedSeq(${symbolMap.map(_._1).mkString(", ")})"""
+    val valuesList = s"""  val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"""
 
     val enumDefinition =
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
