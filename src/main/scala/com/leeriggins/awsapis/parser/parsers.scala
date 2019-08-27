@@ -481,7 +481,7 @@ object AwsApiTypeParser {
       if (d == "0.0") {
         0.0
       } else {
-        Try(d.toInt) match {
+        Try(d.toLong) match {
           case scala.util.Success(value) => value
           case _                         => d.toDouble
         }
