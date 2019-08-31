@@ -554,7 +554,11 @@ object ScalaJsGen {
       }
       .sorted
       .map { sdkClassName =>
-        s"  var ${sdkClassName}: js.UndefOr[ParamsWithEndpoint] = js.undefined"
+        val configTypeName = sdkClassName match {
+          case "s3" | "s3control" => "S3ParamsWithEndpoint"
+          case _                  => "ParamsWithEndpoint"
+        }
+        s"  var ${sdkClassName}: js.UndefOr[${configTypeName}] = js.undefined"
       }
       .mkString("\n")
 
