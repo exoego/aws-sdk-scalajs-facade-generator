@@ -415,6 +415,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
       s"""${traitDefinition}
          |
          |object ${typeName} {
+         |  @inline
          |  def apply(
          |${constructorArgs}
          |  ): ${typeName} = {
