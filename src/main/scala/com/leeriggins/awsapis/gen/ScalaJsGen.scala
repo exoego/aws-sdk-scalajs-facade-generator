@@ -104,7 +104,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         }
     }
 
-    s"""  implicit final class ${api.serviceClassName}Ops(val service: ${api.serviceClassName}) extends AnyVal {
+    s"""  implicit final class ${api.serviceClassName}Ops(private val service: ${api.serviceClassName}) extends AnyVal {
        |
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |  }""".stripMargin
@@ -506,7 +506,7 @@ object ScalaJsGen {
       awsWriter.append(s"""package facade
            |
            |package object amazonaws {
-           |  implicit final class AWSExtensionMethods(val aws: AWS.type) extends AnyVal {
+           |  implicit final class AWSExtensionMethods(private val aws: AWS.type) extends AnyVal {
            |    def config_=(config: AWSConfig): Unit = {
            |      aws.config = config match {
            |        case global: AWSConfigWithServicesDefault => global
