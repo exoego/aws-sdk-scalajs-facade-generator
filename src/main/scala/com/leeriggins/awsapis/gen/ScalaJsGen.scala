@@ -350,7 +350,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
   private def genStructureObjectConstruction(sortedMembers: Option[Seq[(String, AwsApiType)]],
                                              requiredFields: Set[String]) = {
     val instanceWithRequiredFields = if (requiredFields.isEmpty) {
-      "val __obj = js.Dictionary.empty[js.Any]"
+      "val __obj = js.Dynamic.literal()"
     } else {
       val requiredFieldsStr = sortedMembers.fold("")(_.filter {
         case (memberName, _) => requiredFields(memberName)
@@ -360,7 +360,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
             s"""      "${memberName}" -> ${memberType}"""
         }
         .mkString(",\n"))
-      s"""val __obj = js.Dictionary[js.Any](
+      s"""val __obj = js.Dynamic.literal(
         |  ${requiredFieldsStr}
         |)
         |""".stripMargin
@@ -370,7 +370,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         .map {
           case (memberName, _) =>
             val clean = cleanName(memberName)
-            s"""  ${clean}.foreach(__v => __obj.update("${memberName}", __v.asInstanceOf[js.Any]))"""
+            s"""  ${clean}.foreach(__v => __obj.updateDynamic("${memberName}")(__v.asInstanceOf[js.Any]))"""
         }
         .mkString("\n")
     )
