@@ -22,5 +22,4 @@ object Apis {
     case object normal     extends ApiType
     case object paginators extends ApiType
   }
-
 }

@@ -426,7 +426,6 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
     withMemberTypes + (typeName -> structureDefinition)
   }
-
 }
 
 object ScalaJsGen {

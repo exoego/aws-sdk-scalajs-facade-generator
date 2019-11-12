@@ -8,10 +8,8 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 object FieldUtils {
-
   /** Provides convience methods for retriving fields by name from a list of fields. */
   implicit class FieldsImplicits(fields: List[JField]) {
-
     /** Whether the fieldName/fieldValue exists as a string field in the list. */
     def hasStringValue(fieldName: String, fieldValue: String): Boolean = {
       fields.exists {
@@ -176,7 +174,6 @@ object AwsApiTypeParser {
 
     /** Attempt to deserialize the given JSON into an AwsApiType. */
     override def apply(value: JValue): AwsApiType = {
-
       val deprecated = value match {
         case JObject(fields) => {
           fields.getBoolean("deprecated")
@@ -258,7 +255,6 @@ object AwsApiTypeParser {
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
           )
-
         }
 
         case JObject(fields) if (fields.hasTypeValue("structure") && !fields.exists(_._1 == "error")) => {
