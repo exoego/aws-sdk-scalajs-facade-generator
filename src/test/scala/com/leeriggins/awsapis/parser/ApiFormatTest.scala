@@ -28,7 +28,6 @@ class ApiFormatTest extends FunSpec {
           assert(removed == JNothing)
         }
     }
-
   }
 
   describe("The Api normal format") {

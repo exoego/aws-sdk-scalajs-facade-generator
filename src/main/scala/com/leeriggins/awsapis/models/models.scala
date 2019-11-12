@@ -342,5 +342,4 @@ object AwsApiType {
                                 jsonvalue: Option[Boolean])
       extends StringType
       with Sized
-
 }
