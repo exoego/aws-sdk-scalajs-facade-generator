@@ -7,8 +7,9 @@ import org.json4s.jackson.Serialization._
 import com.leeriggins.awsapis.Apis.{versions => apiVersions}
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.parser.Apis._
+import org.scalatest.funspec.AnyFunSpec
 
-class ApiFormatTest extends FunSpec {
+class ApiFormatTest extends AnyFunSpec {
   implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
   def passTestsForType(tpe: ApiType): Unit = {
