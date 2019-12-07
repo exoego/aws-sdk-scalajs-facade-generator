@@ -8,8 +8,10 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 object FieldUtils {
+
   /** Provides convience methods for retriving fields by name from a list of fields. */
   implicit class FieldsImplicits(fields: List[JField]) {
+
     /** Whether the fieldName/fieldValue exists as a string field in the list. */
     def hasStringValue(fieldName: String, fieldValue: String): Boolean = {
       fields.exists {
