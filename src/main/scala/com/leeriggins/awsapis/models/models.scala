@@ -82,7 +82,8 @@ case class Operation(http: Option[Http],
                      deprecatedMessage: Option[String],
                      name: Option[String],
                      alias: Option[String],
-                     idempotent: Option[Boolean])
+                     idempotent: Option[Boolean],
+                     internal: Option[Boolean])
 
 case class Endpoint(hostPrefix: Option[String])
 
