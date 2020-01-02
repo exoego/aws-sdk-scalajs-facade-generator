@@ -18,16 +18,24 @@ case class Api(version: Option[String],
     case "ElasticLoadBalancing"        => "ELB"
     case "ElasticLoadBalancingv2"      => "ELBv2"
     case "ElasticsearchService"        => "ES"
-    case "forecast"                    => "Forecast"
-    case "forecastquery"               => "ForecastQuery"
     case "IoT"                         => "Iot"
     case "IoTDataPlane"                => "IotData"
     case "LexRuntimeService"           => "LexRuntime"
-    case "mq"                          => "MQ"
     case "RDSData"                     => "RDSDataService"
     case "SFN"                         => "StepFunctions"
-    case "signer"                      => "Signer"
+    case "SageMakerA2IRuntime"         => "AugmentedAIRuntime"
     case "Transcribe"                  => "TranscribeService"
+    case "WAFV2"                       => "WAFv2"
+    case "codestarnotifications"       => "CodeStarNotifications"
+    case "forecast"                    => "Forecast"
+    case "forecastquery"               => "ForecastQuery"
+    case "imagebuilder"                => "Imagebuilder"
+    case "kendra"                      => "Kendra"
+    case "kinesisvideosignaling"       => "KinesisVideoSignalingChannels"
+    case "mq"                          => "MQ"
+    case "savingsplans"                => "SavingsPlans"
+    case "schemas"                     => "Schemas"
+    case "signer"                      => "Signer"
     case otherwise                     => otherwise
   }
 
@@ -36,9 +44,12 @@ case class Api(version: Option[String],
     case "ApplicationDiscovery"    => "Discovery"
     case "BudgetsService"          => "Budgets"
     case "CognitoIdentityProvider" => "CognitoIdentityServiceProvider"
-    case "IoTDataPlane"            => "IotData"
     case "Forecast"                => "ForecastService"
     case "ForecastQuery"           => "ForecastQueryService"
+    case "IoTDataPlane"            => "IotData"
+    case "KinesisVideoSignaling"   => "KinesisVideoSignalingChannels"
+    case "SESv2"                   => "SESV2"
+    case "WAFv2"                   => "WAFV2"
     case otherwise                 => otherwise
   }
 }
