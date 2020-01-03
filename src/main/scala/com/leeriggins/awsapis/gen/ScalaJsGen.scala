@@ -57,7 +57,6 @@ class ScalaJsGen(projectDir: File, api: Api) {
        |import scalajs.js.annotation.JSImport
        |import scala.scalajs.js.|
        |import scala.concurrent.Future
-       |import io.scalajs.nodejs
        |import facade.amazonaws._
        |
        |package object ${scalaServiceName} {
@@ -197,8 +196,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
       case _: DoubleType    => Some("Double")
       case _: BooleanType   => Some("Boolean")
       case _: TimestampType => Some("js.Date")
-      case _: BlobType =>
-        Some("nodejs.buffer.Buffer | nodejs.stream.Readable | js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
+      case _: BlobType      => Some("js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
       case _: EnumType      => Some("String")
       case shape: ShapeType => primitive2Scala.get(shape.shape).orElse(Some(shape.shape))
       case map: MapType     => Some(s"js.Dictionary[${className(map.value).get}]")
