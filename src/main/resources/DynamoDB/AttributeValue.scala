@@ -2,6 +2,8 @@
   def NFromInt(value: Int): AttributeValue = js.Dynamic.literal("N" -> value.toString).asInstanceOf[AttributeValue]
   def NFromLong(value: Long): AttributeValue = js.Dynamic.literal("N" -> value.toString).asInstanceOf[AttributeValue]
   def NFromDouble(value: Double): AttributeValue = js.Dynamic.literal("N" -> value.toString).asInstanceOf[AttributeValue]
+  def NFromBigInt(value: BigInt): AttributeValue = js.Dynamic.literal("N" -> value.toString).asInstanceOf[AttributeValue]
+  def NFromBigDecimal(value: BigDecimal): AttributeValue = js.Dynamic.literal("N" -> value.toString).asInstanceOf[AttributeValue]
   def BOOL(value: BooleanAttributeValue): AttributeValue = js.Dynamic.literal("BOOL" -> value).asInstanceOf[AttributeValue]
   def M(value: js.UndefOr[MapAttributeValue]): AttributeValue = if (value.isEmpty) AttributeValue.NULL(true) else js.Dynamic.literal("M" -> value).asInstanceOf[AttributeValue]
   def M(value: Option[MapAttributeValue]): AttributeValue = if (value.isEmpty) AttributeValue.NULL(true) else js.Dynamic.literal("M" -> value.get).asInstanceOf[AttributeValue]
