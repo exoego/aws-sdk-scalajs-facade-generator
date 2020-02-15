@@ -110,31 +110,30 @@ object InputParser {
   import FieldUtils._
 
   object Format
-      extends CustomSerializer[Input](
-        implicit fmt =>
-          ({
-            case JObject(fields) => {
-              val payload      = fields.getString("payload")
-              val apiType      = JObject(fields).extract[AwsApiType]
-              val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
-              Input(payload, apiType, xmlNamespace)
-            }
-          }, {
-            case input: Input => {
-              val JObject(typeFields) = input.apiType match {
-                case structure: StructureType if (structure.members.isEmpty) => {
-                  val JObject(baseFields) = Helper.decompose[JObject](structure)
-                  JObject(baseFields :+ JField("members", JObject(Nil)))
-                }
-                case _ => Helper.decompose[JObject](input.apiType)
+      extends CustomSerializer[Input](implicit fmt =>
+        ({
+          case JObject(fields) => {
+            val payload      = fields.getString("payload")
+            val apiType      = JObject(fields).extract[AwsApiType]
+            val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
+            Input(payload, apiType, xmlNamespace)
+          }
+        }, {
+          case input: Input => {
+            val JObject(typeFields) = input.apiType match {
+              case structure: StructureType if (structure.members.isEmpty) => {
+                val JObject(baseFields) = Helper.decompose[JObject](structure)
+                JObject(baseFields :+ JField("members", JObject(Nil)))
               }
-
-              val payloadField      = optField("payload", input.payload)
-              val xmlNamespaceField = optField("xmlNamespace", input.xmlNamespace)
-
-              JObject(List(payloadField, xmlNamespaceField).flatten ++ typeFields)
+              case _ => Helper.decompose[JObject](input.apiType)
             }
-          })
+
+            val payloadField      = optField("payload", input.payload)
+            val xmlNamespaceField = optField("xmlNamespace", input.xmlNamespace)
+
+            JObject(List(payloadField, xmlNamespaceField).flatten ++ typeFields)
+          }
+        })
       )
 }
 
@@ -142,31 +141,30 @@ object OutputParser {
   import FieldUtils._
 
   object Format
-      extends CustomSerializer[Output](
-        implicit format =>
-          ({
-            case JObject(fields) => {
-              val resultWrapper = fields.getString("resultWrapper")
-              val payload       = fields.getString("payload")
-              val apiType       = JObject(fields).extract[AwsApiType]
-              Output(resultWrapper, payload, apiType)
-            }
-          }, {
-            case output: Output => {
-              val JObject(typeFields) = output.apiType match {
-                case structure: StructureType if (structure.members.isEmpty) => {
-                  val JObject(baseFields) = Helper.decompose[JObject](structure)
-                  JObject(baseFields :+ JField("members", JObject(Nil)))
-                }
-                case other => Helper.decompose[JObject](other)
+      extends CustomSerializer[Output](implicit format =>
+        ({
+          case JObject(fields) => {
+            val resultWrapper = fields.getString("resultWrapper")
+            val payload       = fields.getString("payload")
+            val apiType       = JObject(fields).extract[AwsApiType]
+            Output(resultWrapper, payload, apiType)
+          }
+        }, {
+          case output: Output => {
+            val JObject(typeFields) = output.apiType match {
+              case structure: StructureType if (structure.members.isEmpty) => {
+                val JObject(baseFields) = Helper.decompose[JObject](structure)
+                JObject(baseFields :+ JField("members", JObject(Nil)))
               }
-
-              val resultWrapperField = optField("resultWrapper", output.resultWrapper)
-              val payloadField       = optField("payload", output.payload)
-
-              JObject(List(resultWrapperField, payloadField).flatten ++ typeFields)
+              case other => Helper.decompose[JObject](other)
             }
-          })
+
+            val resultWrapperField = optField("resultWrapper", output.resultWrapper)
+            val payloadField       = optField("payload", output.payload)
+
+            JObject(List(resultWrapperField, payloadField).flatten ++ typeFields)
+          }
+        })
       )
 }
 
@@ -534,7 +532,8 @@ object AwsApiTypeParser {
     override def apply(value: Any): JObject = value match {
       case list: ListType => {
         val flattenedField = optField("flattened", list.flattened)
-        val fields         = List(JField("type", JString("list")), JField("member", Extraction.decompose(list.member))) ++ flattenedField
+        val fields =
+          List(JField("type", JString("list")), JField("member", Extraction.decompose(list.member))) ++ flattenedField
 
         JObject(list.defaultFields() ++ fields)
       }
@@ -590,7 +589,8 @@ object AwsApiTypeParser {
         val eventstreamField  = optField("eventstream", structure.eventstream)
         val eventpayloadField = optField("eventpayload", structure.eventpayload)
 
-        val fields = JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField ++ eventpayloadField)
+        val fields =
+          JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField ++ eventpayloadField)
         JObject(structure.defaultFields() ++ fields)
       }
       case shape: ShapeType => {
