@@ -283,7 +283,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
     val symbolDefinitions = symbolMap.map {
       case (symbolName, symbol) =>
-        s"""  @inline final val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
+        s"""  val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
     }
 
     val valuesList = s"""  val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"""
