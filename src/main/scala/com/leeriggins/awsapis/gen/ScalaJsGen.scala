@@ -197,7 +197,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
       case _: BooleanType   => Some("Boolean")
       case _: TimestampType => Some("js.Date")
       case _: BlobType      => Some("js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
-      case _: EnumType      => Some("String")
+      case _: EnumType      => None
       case shape: ShapeType => primitive2Scala.get(shape.shape).orElse(Some(shape.shape))
       case map: MapType     => Some(s"js.Dictionary[${className(map.value).get}]")
       case list: ListType   => Some(s"js.Array[${className(list.member).get}]")
@@ -283,14 +283,16 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
     val symbolDefinitions = symbolMap.map {
       case (symbolName, symbol) =>
-        s"""  val ${symbolName} = "${symbol}""""
+        s"""  @inline final val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
     }
 
     val valuesList = s"""  val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"""
 
     val enumDefinition =
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
-         |object ${name}Enum {
+         |@js.native
+         |sealed trait ${name} extends js.Any
+         |object ${name} {
          |${symbolDefinitions.mkString("\n")}
          |
          |${valuesList}
