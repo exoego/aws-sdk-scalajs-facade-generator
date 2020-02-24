@@ -113,10 +113,20 @@ class ScalaJsGen(projectDir: File, api: Api) {
         }
     }
 
+    val insertFile = new File(s"src/main/resources/${api.serviceClassName}", s"ops_extension.scala")
+    val opsExtension = if (insertFile.exists()) {
+      val source = io.Source.fromFile(insertFile, "UTF-8")
+      try {
+        source.mkString
+      } finally {
+        source.close()
+      }
+    } else ""
+
     s"""  implicit final class ${api.serviceClassName}Ops(private val service: ${api.serviceClassName}) extends AnyVal {
        |
        |${operations.toIndexedSeq.sorted.mkString("\n")}
-       |  }""".stripMargin
+       |${opsExtension}}""".stripMargin
   }
 
   private def serviceDefinition(): String = {
