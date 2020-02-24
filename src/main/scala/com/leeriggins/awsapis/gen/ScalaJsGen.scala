@@ -51,6 +51,16 @@ class ScalaJsGen(projectDir: File, api: Api) {
       }
     }
 
+    val insertFile = new File(s"src/main/resources/${api.serviceClassName}", s"package_extension.scala")
+    val topLevelInsertion = if (insertFile.exists()) {
+      val source = io.Source.fromFile(insertFile, "UTF-8")
+      try {
+        source.mkString
+      } finally {
+        source.close()
+      }
+    } else ""
+
     s"""package facade.amazonaws.services
        |
        |import scalajs._
@@ -63,7 +73,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
        |${shapeTypeRefs.toIndexedSeq.sorted.map("  " + _._2).mkString("\n")}
        |
        |${futureExtensionMethodDefinition()}
-       |}
+       |$topLevelInsertion}
        |
        |package ${scalaServiceName} {
        |${serviceDefinition()}
