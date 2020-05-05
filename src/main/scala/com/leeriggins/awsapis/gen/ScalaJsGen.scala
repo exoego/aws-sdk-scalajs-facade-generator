@@ -79,13 +79,13 @@ class ScalaJsGen(projectDir: File, api: Api) {
        |${serviceDefinition()}
        |
        |${allTypes.toIndexedSeq.sorted
-         .map { case (_, resolvedType) => resolvedType }
-         .mkString("\n\n")
-         .split('\n')
-         .map { line =>
-           if (line.length > 0) "  " + line else line
-         }
-         .mkString("\n")}
+      .map { case (_, resolvedType) => resolvedType }
+      .mkString("\n\n")
+      .split('\n')
+      .map { line =>
+        if (line.length > 0) "  " + line else line
+      }
+      .mkString("\n")}
        |}""".stripMargin
   }
 
@@ -175,12 +175,15 @@ class ScalaJsGen(projectDir: File, api: Api) {
     val doc = awsApiType.documentation.filter(_ != s"<p>${typeName}</p>").map { documentation =>
       val reps: Seq[String => String] = Seq(
         doc =>
-          fieldReference.replaceAllIn(doc, matched => {
-            matched.group(1) match {
-              case `typeName` => s"${matched.group(2)}"
-              case _          => s"[[${matched.group(1)}.${matched.group(2)}]]"
+          fieldReference.replaceAllIn(
+            doc,
+            matched => {
+              matched.group(1) match {
+                case `typeName` => s"${matched.group(2)}"
+                case _          => s"[[${matched.group(1)}.${matched.group(2)}]]"
+              }
             }
-          }),
+          ),
         doc => doc.replaceAllLiterally("$", ""),
         doc => notePattern.replaceAllIn(doc, "\n'''Note:'''"),
         doc => boldText.replaceAllIn(doc, matched => s"```${matched.group(1)}```"),
@@ -226,10 +229,12 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def cleanName(name: String): String = {
-    if (name.exists { char =>
-          !char.isLetterOrDigit && char != '_'
-        } || !name.head.isLetter
-        || ScalaJsGen.scalaKeywords.contains(name)) {
+    if (
+      name.exists { char =>
+        !char.isLetterOrDigit && char != '_'
+      } || !name.head.isLetter
+      || ScalaJsGen.scalaKeywords.contains(name)
+    ) {
       "`" + name + "`"
     } else {
       name
@@ -269,7 +274,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
   /** Adds the new type recursively to the previously resolved types. */
   private def genTypesRecursive(name: String,
                                 definition: AwsApiType,
-                                resolvedTypes: Map[String, String]): Map[String, String] = {
+                                resolvedTypes: Map[String, String]
+  ): Map[String, String] = {
     if (resolvedTypes.contains(name)) {
       return resolvedTypes
     }
@@ -342,7 +348,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def genStructureMemberFields(sortedMembers: Option[Seq[(String, AwsApiType)]],
-                                       requiredFields: Set[String]) = {
+                                       requiredFields: Set[String]
+  ) = {
     sortedMembers.fold("")(_.map {
       case (memberName, memberType) =>
         val memberType_ = if (requiredFields(memberName)) {
@@ -355,7 +362,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def genStructureConstructorArgs(sortedMembers: Option[Seq[(String, AwsApiType)]],
-                                          requiredFields: Set[String]) = {
+                                          requiredFields: Set[String]
+  ) = {
     sortedMembers.fold("")(_.map {
       case (memberName, memberType) =>
         val memberTypeStr = if (requiredFields(memberName)) {
@@ -368,7 +376,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def genStructureObjectConstruction(sortedMembers: Option[Seq[(String, AwsApiType)]],
-                                             requiredFields: Set[String]) = {
+                                             requiredFields: Set[String]
+  ) = {
     val instanceWithRequiredFields = if (requiredFields.isEmpty) {
       "val __obj = js.Dynamic.literal()"
     } else {

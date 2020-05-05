@@ -111,29 +111,32 @@ object InputParser {
 
   object Format
       extends CustomSerializer[Input](implicit fmt =>
-        ({
-          case JObject(fields) => {
-            val payload      = fields.getString("payload")
-            val apiType      = JObject(fields).extract[AwsApiType]
-            val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
-            Input(payload, apiType, xmlNamespace)
-          }
-        }, {
-          case input: Input => {
-            val JObject(typeFields) = input.apiType match {
-              case structure: StructureType if (structure.members.isEmpty) => {
-                val JObject(baseFields) = Helper.decompose[JObject](structure)
-                JObject(baseFields :+ JField("members", JObject(Nil)))
-              }
-              case _ => Helper.decompose[JObject](input.apiType)
+        (
+          {
+            case JObject(fields) => {
+              val payload      = fields.getString("payload")
+              val apiType      = JObject(fields).extract[AwsApiType]
+              val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
+              Input(payload, apiType, xmlNamespace)
             }
+          },
+          {
+            case input: Input => {
+              val JObject(typeFields) = input.apiType match {
+                case structure: StructureType if (structure.members.isEmpty) => {
+                  val JObject(baseFields) = Helper.decompose[JObject](structure)
+                  JObject(baseFields :+ JField("members", JObject(Nil)))
+                }
+                case _ => Helper.decompose[JObject](input.apiType)
+              }
 
-            val payloadField      = optField("payload", input.payload)
-            val xmlNamespaceField = optField("xmlNamespace", input.xmlNamespace)
+              val payloadField      = optField("payload", input.payload)
+              val xmlNamespaceField = optField("xmlNamespace", input.xmlNamespace)
 
-            JObject(List(payloadField, xmlNamespaceField).flatten ++ typeFields)
+              JObject(List(payloadField, xmlNamespaceField).flatten ++ typeFields)
+            }
           }
-        })
+        )
       )
 }
 
@@ -142,29 +145,32 @@ object OutputParser {
 
   object Format
       extends CustomSerializer[Output](implicit format =>
-        ({
-          case JObject(fields) => {
-            val resultWrapper = fields.getString("resultWrapper")
-            val payload       = fields.getString("payload")
-            val apiType       = JObject(fields).extract[AwsApiType]
-            Output(resultWrapper, payload, apiType)
-          }
-        }, {
-          case output: Output => {
-            val JObject(typeFields) = output.apiType match {
-              case structure: StructureType if (structure.members.isEmpty) => {
-                val JObject(baseFields) = Helper.decompose[JObject](structure)
-                JObject(baseFields :+ JField("members", JObject(Nil)))
-              }
-              case other => Helper.decompose[JObject](other)
+        (
+          {
+            case JObject(fields) => {
+              val resultWrapper = fields.getString("resultWrapper")
+              val payload       = fields.getString("payload")
+              val apiType       = JObject(fields).extract[AwsApiType]
+              Output(resultWrapper, payload, apiType)
             }
+          },
+          {
+            case output: Output => {
+              val JObject(typeFields) = output.apiType match {
+                case structure: StructureType if (structure.members.isEmpty) => {
+                  val JObject(baseFields) = Helper.decompose[JObject](structure)
+                  JObject(baseFields :+ JField("members", JObject(Nil)))
+                }
+                case other => Helper.decompose[JObject](other)
+              }
 
-            val resultWrapperField = optField("resultWrapper", output.resultWrapper)
-            val payloadField       = optField("payload", output.payload)
+              val resultWrapperField = optField("resultWrapper", output.resultWrapper)
+              val payloadField       = optField("payload", output.payload)
 
-            JObject(List(resultWrapperField, payloadField).flatten ++ typeFields)
+              JObject(List(resultWrapperField, payloadField).flatten ++ typeFields)
+            }
           }
-        })
+        )
       )
 }
 
@@ -529,138 +535,163 @@ object AwsApiTypeParser {
       }
     }
 
-    override def apply(value: Any): JObject = value match {
-      case list: ListType => {
-        val flattenedField = optField("flattened", list.flattened)
-        val fields =
-          List(JField("type", JString("list")), JField("member", Extraction.decompose(list.member))) ++ flattenedField
-
-        JObject(list.defaultFields() ++ fields)
-      }
-      case map: MapType => {
-        val flattenedField = optField("flattened", map.flattened)
-        val fields = List(
-          JField("type", JString("map")),
-          JField("key", Extraction.decompose(map.key)),
-          JField("value", Extraction.decompose(map.value))
-        ) ++ flattenedField
-        JObject(map.defaultFields() ++ fields)
-      }
-      case error: ErrorType => {
-        val requiredField = if (error.required.isEmpty) {
-          List()
-        } else {
-          List(JField("required", JArray(error.required.map { fieldName =>
-            JString(fieldName)
-          })))
+    override def apply(value: Any): JObject =
+      value match {
+        case list: ListType           => parseListType(list)
+        case map: MapType             => parseMapType(map)
+        case error: ErrorType         => parseErrorType(error)
+        case structure: StructureType => parseStructureType(structure)
+        case shape: ShapeType         => parseShapeType(shape)
+        case boolean: BooleanType     => JObject(boolean.defaultFields() ++ List(JField("type", JString("boolean"))))
+        case integer: IntegerType     => JObject(integer.defaultFields() ++ List(JField("type", JString("integer"))))
+        case long: LongType           => JObject(long.defaultFields() ++ List(JField("type", JString("long"))))
+        case float: FloatType => {
+          val optFields =
+            List(optField("max", float.max.map(toNumber)), optField("min", float.min.map(toNumber))).flatten
+          val fields = JField("type", JString("float")) +: optFields
+          JObject(float.defaultFields() ++ fields)
         }
-        val membersField = Some(JField("members", Extraction.decompose(error.members)))
-        val xmlOrderField = error.xmlOrder.map { xmlOrder =>
-          JField("xmlOrder", Extraction.decompose(xmlOrder))
+        case double: DoubleType => {
+          val optFields =
+            List(optField("max", double.max.map(toNumber)), optField("min", double.min.map(toNumber))).flatten
+          val fields = JField("type", JString("double")) +: optFields
+          JObject(double.defaultFields() ++ fields)
         }
-        val errorField = error.error.map { error =>
-          JField("error", Extraction.decompose(error))
+        case timestamp: TimestampType => {
+          val timestampFormatField = optField("timestampFormat", timestamp.timestampFormat)
+          val fields               = List(JField("type", JString("timestamp"))) ++ timestampFormatField
+          JObject(timestamp.defaultFields() ++ fields)
         }
-        val exceptionField = Some(JField("exception", Extraction.decompose(error.exception)))
-        val typeField      = Some(JField("type", JString("structure")))
-        val faultField     = optField("fault", error.fault)
-
-        val fields =
-          (errorField :: exceptionField :: faultField :: typeField :: membersField :: xmlOrderField :: Nil).flatten
-
-        JObject(error.defaultFields() ++ fields ++ requiredField)
+        case blob: BlobType => parseBlobType(blob)
+        case enum: EnumType => parseEnumType(enum)
+        case string: ExplicitStringType => {
+          val typeField = JField("type", JString("string"))
+          JObject(typeField +: string.defaultFields())
+        }
+        case string: DefaultStringType => {
+          JObject(string.defaultFields())
+        }
       }
-      case structure: StructureType => {
-        val requiredField = structure.required match {
-          case None => List()
-          case Some(list) =>
-            List(JField("required", JArray(list.map { fieldName =>
+
+    private def parseBlobType(blob: BlobType): JObject = {
+      val streamingField    = optField("streaming", blob.streaming)
+      val sensitiveField    = optField("sensitive", blob.sensitive)
+      val eventpayloadField = optField("eventpayload", blob.eventpayload)
+      JObject(
+        blob.defaultFields() ++ List(
+          JField("type", JString("blob"))
+        ) ++ streamingField ++ sensitiveField ++ eventpayloadField
+      )
+    }
+
+    private def parseEnumType(enum: EnumType): JObject = {
+      val enumSymbols = enum.symbols.map { symbol =>
+        JString(symbol)
+      }
+      val enumField = JField("enum", JArray(enumSymbols))
+      val typeField = JField("type", JString("string"))
+
+      JObject(typeField :: enumField :: enum.defaultFields())
+    }
+
+    private def parseListType(list: ListType): JObject = {
+      val flattenedField = optField("flattened", list.flattened)
+      val fields =
+        List(JField("type", JString("list")), JField("member", Extraction.decompose(list.member))) ++ flattenedField
+
+      JObject(list.defaultFields() ++ fields)
+    }
+
+    private def parseMapType(map: MapType): JObject = {
+      val flattenedField = optField("flattened", map.flattened)
+      val fields = List(
+        JField("type", JString("map")),
+        JField("key", Extraction.decompose(map.key)),
+        JField("value", Extraction.decompose(map.value))
+      ) ++ flattenedField
+      JObject(map.defaultFields() ++ fields)
+    }
+
+    private def parseErrorType(error: ErrorType): JObject = {
+      val requiredField = if (error.required.isEmpty) {
+        List()
+      } else {
+        List(
+          JField(
+            "required",
+            JArray(error.required.map { fieldName =>
               JString(fieldName)
-            })))
-        }
-
-        val membersField      = optField("members", structure.members)
-        val payloadField      = optField("payload", structure.payload)
-        val sensitiveField    = optField("sensitive", structure.sensitive)
-        val xmlNamespaceField = optField("xmlNamespace", structure.xmlNamespace)
-        val xmlOrderField     = optField("xmlOrder", structure.xmlOrder)
-        val wrapperField      = optField("wrapper", structure.wrapper)
-        val eventField        = optField("event", structure.event)
-        val eventstreamField  = optField("eventstream", structure.eventstream)
-        val eventpayloadField = optField("eventpayload", structure.eventpayload)
-
-        val fields =
-          JField("type", JString("structure")) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField ++ eventpayloadField)
-        JObject(structure.defaultFields() ++ fields)
-      }
-      case shape: ShapeType => {
-        val optFields = List(
-          optField("box", shape.box),
-          optField("eventpayload", shape.eventpayload),
-          optField("xmlNamespace", shape.xmlNamespace),
-          optField("xmlOrder", shape.xmlOrder),
-          optField("xmlAttribute", shape.xmlAttribute),
-          optField("queryName", shape.queryName),
-          optField("flattened", shape.flattened),
-          optField("wrapper", shape.wrapper),
-          optField("streaming", shape.streaming),
-          optField("jsonvalue", shape.jsonvalue),
-          optField("idempotencyToken", shape.idempotencyToken)
-        ).flatten
-
-        val fields = JField("shape", JString(shape.shape)) +: optFields
-
-        JObject(shape.defaultFields() ++ fields)
-      }
-      case boolean: BooleanType => {
-        JObject(boolean.defaultFields() ++ List(JField("type", JString("boolean"))))
-      }
-      case integer: IntegerType => {
-        JObject(integer.defaultFields() ++ List(JField("type", JString("integer"))))
-      }
-      case long: LongType => {
-        JObject(long.defaultFields() ++ List(JField("type", JString("long"))))
-      }
-      case float: FloatType => {
-        val optFields = List(optField("max", float.max.map(toNumber)), optField("min", float.min.map(toNumber))).flatten
-        val fields    = JField("type", JString("float")) +: optFields
-        JObject(float.defaultFields() ++ fields)
-      }
-      case double: DoubleType => {
-        val optFields =
-          List(optField("max", double.max.map(toNumber)), optField("min", double.min.map(toNumber))).flatten
-        val fields = JField("type", JString("double")) +: optFields
-        JObject(double.defaultFields() ++ fields)
-      }
-      case timestamp: TimestampType => {
-        val timestampFormatField = optField("timestampFormat", timestamp.timestampFormat)
-        val fields               = List(JField("type", JString("timestamp"))) ++ timestampFormatField
-        JObject(timestamp.defaultFields() ++ fields)
-      }
-      case blob: BlobType => {
-        val streamingField    = optField("streaming", blob.streaming)
-        val sensitiveField    = optField("sensitive", blob.sensitive)
-        val eventpayloadField = optField("eventpayload", blob.eventpayload)
-        JObject(
-          blob.defaultFields() ++ List(JField("type", JString("blob"))) ++ streamingField ++ sensitiveField ++ eventpayloadField
+            })
+          )
         )
       }
-      case enum: EnumType => {
-        val enumSymbols = enum.symbols.map { symbol =>
-          JString(symbol)
-        }
-        val enumField = JField("enum", JArray(enumSymbols))
-        val typeField = JField("type", JString("string"))
+      val membersField = Some(JField("members", Extraction.decompose(error.members)))
+      val xmlOrderField = error.xmlOrder.map { xmlOrder =>
+        JField("xmlOrder", Extraction.decompose(xmlOrder))
+      }
+      val errorField = error.error.map { error =>
+        JField("error", Extraction.decompose(error))
+      }
+      val exceptionField = Some(JField("exception", Extraction.decompose(error.exception)))
+      val typeField      = Some(JField("type", JString("structure")))
+      val faultField     = optField("fault", error.fault)
 
-        JObject(typeField :: enumField :: enum.defaultFields())
+      val fields =
+        (errorField :: exceptionField :: faultField :: typeField :: membersField :: xmlOrderField :: Nil).flatten
+
+      JObject(error.defaultFields() ++ fields ++ requiredField)
+    }
+
+    private def parseShapeType(shape: ShapeType): JObject = {
+      val optFields = List(
+        optField("box", shape.box),
+        optField("eventpayload", shape.eventpayload),
+        optField("xmlNamespace", shape.xmlNamespace),
+        optField("xmlOrder", shape.xmlOrder),
+        optField("xmlAttribute", shape.xmlAttribute),
+        optField("queryName", shape.queryName),
+        optField("flattened", shape.flattened),
+        optField("wrapper", shape.wrapper),
+        optField("streaming", shape.streaming),
+        optField("jsonvalue", shape.jsonvalue),
+        optField("idempotencyToken", shape.idempotencyToken)
+      ).flatten
+
+      val fields = JField("shape", JString(shape.shape)) +: optFields
+
+      JObject(shape.defaultFields() ++ fields)
+    }
+
+    private def parseStructureType(structure: StructureType): JObject = {
+      val requiredField = structure.required match {
+        case None => List()
+        case Some(list) =>
+          List(
+            JField(
+              "required",
+              JArray(list.map { fieldName =>
+                JString(fieldName)
+              })
+            )
+          )
       }
-      case string: ExplicitStringType => {
-        val typeField = JField("type", JString("string"))
-        JObject(typeField +: string.defaultFields())
-      }
-      case string: DefaultStringType => {
-        JObject(string.defaultFields())
-      }
+
+      val membersField      = optField("members", structure.members)
+      val payloadField      = optField("payload", structure.payload)
+      val sensitiveField    = optField("sensitive", structure.sensitive)
+      val xmlNamespaceField = optField("xmlNamespace", structure.xmlNamespace)
+      val xmlOrderField     = optField("xmlOrder", structure.xmlOrder)
+      val wrapperField      = optField("wrapper", structure.wrapper)
+      val eventField        = optField("event", structure.event)
+      val eventstreamField  = optField("eventstream", structure.eventstream)
+      val eventpayloadField = optField("eventpayload", structure.eventpayload)
+
+      val fields =
+        JField(
+          "type",
+          JString("structure")
+        ) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField ++ eventpayloadField)
+      JObject(structure.defaultFields() ++ fields)
     }
 
     override def isDefinedAt(value: Any): Boolean = {
