@@ -184,7 +184,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
               }
             }
           ),
-        doc => doc.replaceAllLiterally("$", ""),
+        doc => doc.replace("$", ""),
         doc => notePattern.replaceAllIn(doc, "\n'''Note:'''"),
         doc => boldText.replaceAllIn(doc, matched => s"```${matched.group(1)}```"),
         doc => headings.replaceAllIn(doc, matched => s"\n=${matched.group(1)}=\n"),
