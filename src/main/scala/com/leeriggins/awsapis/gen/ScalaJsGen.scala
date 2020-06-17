@@ -384,11 +384,10 @@ class ScalaJsGen(projectDir: File, api: Api) {
       val requiredFieldsStr = sortedMembers.fold("")(_.filter {
         case (memberName, _) => requiredFields(memberName)
       }.map {
-          case (memberName, _) =>
-            val memberType = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
-            s"""      "${memberName}" -> ${memberType}"""
-        }
-        .mkString(",\n"))
+        case (memberName, _) =>
+          val memberType = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
+          s"""      "${memberName}" -> ${memberType}"""
+      }.mkString(",\n"))
       s"""val __obj = js.Dynamic.literal(
         |  ${requiredFieldsStr}
         |)
