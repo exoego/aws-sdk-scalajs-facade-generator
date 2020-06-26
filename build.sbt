@@ -10,12 +10,11 @@ lazy val `aws-sdk-scalajs-generator` = (project in file(".")).settings(
     "-Ywarn-value-discard",
     "-Ywarn-numeric-widen",
     "-Ywarn-extra-implicit",
-    "-Ywarn-self-implicit",
     "-Xlint:_",
     "-Xfatal-warnings"
   ),
   version := "0.0.2",
-  scalaVersion := "2.13.0"
+  scalaVersion := "2.13.3"
 )
 
 libraryDependencies ++= Seq(

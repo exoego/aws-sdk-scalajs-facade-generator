@@ -195,7 +195,7 @@ object AwsApiTypeParser {
       }
 
       value match {
-        case JObject(fields) if (fields.hasShape) => {
+        case JObject(fields) if (fields.hasShape()) => {
           val xmlNamespace = fields.getFieldValue("xmlNamespace").map(_.extract[XmlNamespace])
           val xmlOrder     = fields.getFieldValue("xmlOrder").map(_.extract[List[String]])
           ShapeType(
