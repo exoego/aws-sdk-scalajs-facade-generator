@@ -10,7 +10,6 @@ lazy val `aws-sdk-scalajs-generator` = (project in file(".")).settings(
     "-Ywarn-value-discard",
     "-Ywarn-numeric-widen",
     "-Ywarn-extra-implicit",
-    "-Ywarn-self-implicit",
     "-Xlint:_",
     "-Xfatal-warnings"
   ),
