@@ -68,6 +68,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
        |import scala.scalajs.js.|
        |import scala.concurrent.Future
        |import facade.amazonaws._
+       |import net.exoego.scalajs.types.util.Factory
        |
        |package object ${scalaServiceName} {
        |${shapeTypeRefs.toIndexedSeq.sorted.map("  " + _._2).mkString("\n")}
@@ -361,52 +362,6 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }.mkString("\n"))
   }
 
-  private def genStructureConstructorArgs(sortedMembers: Option[Seq[(String, AwsApiType)]],
-                                          requiredFields: Set[String]
-  ) = {
-    sortedMembers.fold("")(_.map {
-      case (memberName, memberType) =>
-        val memberTypeStr = if (requiredFields(memberName)) {
-          s"${className(memberType).getOrElse(memberName)}"
-        } else {
-          s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
-        }
-        s"""    ${cleanName(memberName)}: ${memberTypeStr}"""
-    }.mkString(",\n"))
-  }
-
-  private def genStructureObjectConstruction(sortedMembers: Option[Seq[(String, AwsApiType)]],
-                                             requiredFields: Set[String]
-  ) = {
-    val instanceWithRequiredFields = if (requiredFields.isEmpty) {
-      "val __obj = js.Dynamic.literal()"
-    } else {
-      val requiredFieldsStr = sortedMembers.fold("")(_.filter {
-        case (memberName, _) => requiredFields(memberName)
-      }.map {
-        case (memberName, _) =>
-          val memberType = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
-          s"""      "${memberName}" -> ${memberType}"""
-      }.mkString(",\n"))
-      s"""val __obj = js.Dynamic.literal(
-        |  ${requiredFieldsStr}
-        |)
-        |""".stripMargin
-    }
-    val optionalFields = sortedMembers.fold("")(
-      _.filterNot { case (memberName, _) => requiredFields(memberName) }
-        .map {
-          case (memberName, _) =>
-            val clean = cleanName(memberName)
-            s"""  ${clean}.foreach(__v => __obj.updateDynamic("${memberName}")(__v.asInstanceOf[js.Any]))"""
-        }
-        .mkString("\n")
-    )
-
-    s"""${instanceWithRequiredFields}
-      |${optionalFields}""".stripMargin
-  }
-
   private def requiredAndAlphabetical(requiredFields: Set[String]): ((String, AwsApiType)) => (Boolean, String) = {
     case (memberName, _) =>
       (
@@ -420,37 +375,31 @@ class ScalaJsGen(projectDir: File, api: Api) {
       case (types, (memberName, memberType)) =>
         genTypesRecursive(memberName, memberType, types)
     })
-    val requiredFields  = structure.required.map(_.toSet).getOrElse(Set.empty[String])
-    val sortedMembers   = structure.members.map(_.toSeq.sortBy(requiredAndAlphabetical(requiredFields)))
-    val memberFields    = genStructureMemberFields(sortedMembers, requiredFields)
-    val constructorArgs = genStructureConstructorArgs(sortedMembers, requiredFields)
-    val objConstruction = genStructureObjectConstruction(sortedMembers, requiredFields)
+    val requiredFields = structure.required.map(_.toSet).getOrElse(Set.empty[String])
+    val sortedMembers  = structure.members.map(_.toSeq.sortBy(requiredAndAlphabetical(requiredFields)))
+    val memberFields   = genStructureMemberFields(sortedMembers, requiredFields)
     val traitDefinition =
       s"""${docsAndAnnotation(structure, typeName)}
+         |@Factory
          |trait ${typeName} extends js.Object {
          |${memberFields}
          |}""".stripMargin
     val insertFile = new File(s"src/main/resources/${api.serviceClassName}", s"${typeName}.scala")
-    val insertContent = if (insertFile.exists()) {
+    val companionObject = if (insertFile.exists()) {
       val source = io.Source.fromFile(insertFile, "UTF-8")
       try {
-        source.mkString
+        s"""object ${typeName} {
+           |${source.mkString}
+           |}
+           |""".stripMargin
       } finally {
         source.close()
       }
     } else ""
     val structureDefinition =
       s"""${traitDefinition}
-         |
-         |object ${typeName} {
-         |  @inline
-         |  def apply(
-         |${constructorArgs}
-         |  ): ${typeName} = {
-         |${objConstruction}
-         |    __obj.asInstanceOf[${typeName}]
-         |  }
-         |${insertContent}}""".stripMargin
+         |${companionObject}
+         |""".stripMargin
 
     withMemberTypes + (typeName -> structureDefinition)
   }
