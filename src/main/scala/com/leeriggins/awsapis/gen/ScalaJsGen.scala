@@ -110,7 +110,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         operation.deprecated match {
           case Some(true) => ""
           case _ =>
-            s"  @inline def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise.toFuture"
+            s"  @inline def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise().toFuture"
         }
     }
 
