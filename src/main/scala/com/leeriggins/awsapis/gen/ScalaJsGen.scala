@@ -151,7 +151,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
 
     s"""  @js.native
-       |  @JSImport("aws-sdk", "${api.sdkClassName}")
+       |  @JSImport("aws-sdk", "${api.sdkClassName}", "AWS.${api.sdkClassName}")
        |  class ${api.serviceClassName}() extends js.Object {
        |    def this(config: AWSConfig) = this()
        |
