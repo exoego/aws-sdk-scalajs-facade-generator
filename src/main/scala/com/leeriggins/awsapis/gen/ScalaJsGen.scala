@@ -607,6 +607,60 @@ object ScalaJsGen {
     }
   }
 
+
+  def generateAllServicesTest(): Unit = {
+    import Apis._
+    import org.json4s._
+    import org.json4s.jackson.JsonMethods._
+    import java.io._
+
+    implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
+
+    val projectDir = new File("../aws-sdk-scalajs-facade/all")
+    if (!projectDir.exists()) {
+      projectDir.mkdirs()
+    }
+
+    val apiVersions    = com.leeriggins.awsapis.Apis.versions
+    val packageRootDir = new File(projectDir, s"src/test/scala/net/exoego")
+    packageRootDir.mkdirs()
+    val awsFile = new File(packageRootDir, s"AllServicesTest.scala")
+    awsFile.createNewFile()
+    val awsWriter = new PrintWriter(new FileWriter(awsFile))
+
+    val types = apiVersions
+      .map {
+        case (name, version) =>
+          val text       = json(name, version, ApiType.normal)
+          val parsedText = parse(text)
+          val api        = parsedText.extract[Api]
+          api.sdkClassName
+      }
+      .sorted
+      .map { sdkClassName =>
+        s"""  test("${sdkClassName}") {
+           |    val instance = new services.${sdkClassName.toLowerCase}.${sdkClassName}
+           |  }
+           |""".stripMargin
+      }
+      .mkString("\n")
+
+    try {
+      awsWriter.append(s"""package net.exoego
+                          |
+                          |import facade.amazonaws.{AWSConfig, services}
+                          |import org.scalatest.funsuite.AnyFunSuite
+                          |
+                          |class AllServicesTest extends AnyFunSuite {
+                          |${types}
+                          |}
+                          |""".stripMargin.trim)
+      ()
+    } finally {
+      awsWriter.close()
+    }
+  }
+
   def checkNewService(): Unit = {
     import scala.jdk.CollectionConverters._
 
@@ -654,5 +708,6 @@ object ScalaJsGen {
     checkNewService()
     generatePackageFile()
     generateAWSConfigWithServicesDefault()
+    generateAllServicesTest()
   }
 }
