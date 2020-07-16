@@ -1,6 +1,8 @@
 package com.leeriggins.awsapis.gen
 
 import java.io.File
+import java.nio.file.{Files, Path, Paths}
+import java.util.stream.Collectors
 
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
@@ -605,7 +607,51 @@ object ScalaJsGen {
     }
   }
 
+  def checkNewService(): Unit = {
+    import scala.jdk.CollectionConverters._
+
+    val apiVersionsMap = com.leeriggins.awsapis.Apis.versions.toMap
+    val versionPattern = "^(.+)-(\\d{4}-\\d{2}-\\d{2})".r
+
+    val jsonStream = Files.list(Paths.get(s"aws-sdk-js/apis")).collect(Collectors.toList[Path])
+    val servicesJsons = jsonStream.asScala
+      .flatMap { path =>
+        versionPattern.findFirstMatchIn(path.getFileName.toString).map { m =>
+          m.group(1) -> m.group(2)
+        }
+      }
+      .toSet
+      .groupMap[String, String](_._1)(_._2)
+
+    val newServiceKeys = (servicesJsons.keySet -- apiVersionsMap.keySet)
+    if (newServiceKeys.nonEmpty) {
+      newServiceKeys.foreach { key =>
+        val latestVersion = servicesJsons(key).max
+        println(s""" "${key}" -> "${latestVersion}",  """)
+      }
+      throw new Exception("Newly-added services found !!")
+    }
+
+    val oldVersions = servicesJsons.filter(_._2.sizeIs >= 2).flatMap {
+      case (key, versions) =>
+        val latestVersion = versions.max
+        if (latestVersion > apiVersionsMap(key)) {
+          Some(key -> latestVersion)
+        } else {
+          None
+        }
+    }
+    if (oldVersions.nonEmpty) {
+      oldVersions.foreach {
+        case (key, latestVersion) =>
+          println(s""" "${key}" -> "${latestVersion}",  """)
+      }
+      throw new Exception("Newer version found !!")
+    }
+  }
+
   def main(args: Array[String]): Unit = {
+    checkNewService()
     generatePackageFile()
     generateAWSConfigWithServicesDefault()
   }
