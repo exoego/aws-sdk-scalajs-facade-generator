@@ -37,6 +37,9 @@ case class Api(version: Option[String],
     case "savingsplans"                => "SavingsPlans"
     case "schemas"                     => "Schemas"
     case "signer"                      => "Signer"
+    case "codeartifact"                => "CodeArtifact"
+    case "ivs"                         => "IVS"
+    case "synthetics"                  => "Synthetics"
     case otherwise                     => otherwise
   }
 
