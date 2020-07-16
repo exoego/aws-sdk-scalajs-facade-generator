@@ -475,6 +475,7 @@ object ScalaJsGen {
     "match",
     "new",
     "null",
+    "package",
     "print",
     "printf",
     "println",
