@@ -608,7 +608,6 @@ object ScalaJsGen {
     }
   }
 
-
   def generateAllServicesTest(): Unit = {
     import Apis._
     import org.json4s._
@@ -635,12 +634,12 @@ object ScalaJsGen {
           val text       = json(name, version, ApiType.normal)
           val parsedText = parse(text)
           val api        = parsedText.extract[Api]
-          api.sdkClassName
+          api.serviceClassName
       }
       .sorted
       .map { sdkClassName =>
         s"""  test("${sdkClassName}") {
-           |    val instance = new services.${sdkClassName.toLowerCase}.${sdkClassName}
+           |    val instance = new services.${sdkClassName.toLowerCase}.${sdkClassName}(config)
            |  }
            |""".stripMargin
       }
@@ -653,6 +652,10 @@ object ScalaJsGen {
                           |import org.scalatest.funsuite.AnyFunSuite
                           |
                           |class AllServicesTest extends AnyFunSuite {
+                          |  val config = AWSConfig(
+                          |    endpoint = "http://localhost"
+                          |  )
+                          |
                           |${types}
                           |}
                           |""".stripMargin.trim)
