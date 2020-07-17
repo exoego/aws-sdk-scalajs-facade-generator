@@ -1,12 +1,18 @@
 package com.leeriggins.awsapis.gen
 
-import java.io.File
+import java.io._
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
+
+import scala.jdk.CollectionConverters._
 
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
+
+import Apis._
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 
 class ScalaJsGen(projectDir: File, api: Api) {
   private val scalaServiceName: String = api.serviceClassName.toLowerCase
@@ -24,8 +30,6 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   def gen(): Unit = {
-    import java.io._
-
     mkdirs()
     val f = new File(packageDir, api.serviceClassName + ".scala")
     f.createNewFile()
@@ -494,28 +498,19 @@ object ScalaJsGen {
     "with"
   )
 
+  implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
+
   def generatePackageFile(): Unit = {
-    import Apis._
-    import org.json4s._
-    import org.json4s.jackson.JsonMethods._
-    import java.io._
-
-    implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
-
     val projectDir = new File("../aws-sdk-scalajs-facade")
     val allDir     = new File(projectDir, "all")
-    if (!allDir.exists()) {
-      projectDir.mkdirs()
-    }
-
-    val apiVersions    = com.leeriggins.awsapis.Apis.versions
+    projectDir.mkdirs()
     val allPackageRoot = new File(allDir, s"src/main/scala/facade/amazonaws")
     allPackageRoot.mkdirs()
     val awsFile = new File(allPackageRoot, s"package.scala")
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-    val types = apiVersions
+    val types = com.leeriggins.awsapis.Apis.versions
       .map {
         case (name, version) =>
           val text       = json(name, version, ApiType.normal)
@@ -556,26 +551,15 @@ object ScalaJsGen {
   }
 
   def generateAWSConfigWithServicesDefault(): Unit = {
-    import Apis._
-    import org.json4s._
-    import org.json4s.jackson.JsonMethods._
-    import java.io._
-
-    implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
-
     val projectDir = new File("../aws-sdk-scalajs-facade/core")
-    if (!projectDir.exists()) {
-      projectDir.mkdirs()
-    }
-
-    val apiVersions    = com.leeriggins.awsapis.Apis.versions
+    projectDir.mkdirs()
     val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
     packageRootDir.mkdirs()
     val awsFile = new File(packageRootDir, s"AWSConfigWithServicesDefault.scala")
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-    val types = apiVersions
+    val types = com.leeriggins.awsapis.Apis.versions
       .map {
         case (name, version) =>
           val text       = json(name, version, ApiType.normal)
@@ -609,26 +593,15 @@ object ScalaJsGen {
   }
 
   def generateAllServicesTest(): Unit = {
-    import Apis._
-    import org.json4s._
-    import org.json4s.jackson.JsonMethods._
-    import java.io._
-
-    implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
-
     val projectDir = new File("../aws-sdk-scalajs-facade/all")
-    if (!projectDir.exists()) {
-      projectDir.mkdirs()
-    }
-
-    val apiVersions    = com.leeriggins.awsapis.Apis.versions
+    projectDir.mkdirs()
     val packageRootDir = new File(projectDir, s"src/test/scala/net/exoego")
     packageRootDir.mkdirs()
     val awsFile = new File(packageRootDir, s"AllServicesTest.scala")
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-    val types = apiVersions
+    val types = com.leeriggins.awsapis.Apis.versions
       .map {
         case (name, version) =>
           val text       = json(name, version, ApiType.normal)
@@ -666,20 +639,20 @@ object ScalaJsGen {
   }
 
   def checkNewService(): Unit = {
-    import scala.jdk.CollectionConverters._
-
     val apiVersionsMap = com.leeriggins.awsapis.Apis.versions.toMap
     val versionPattern = "^(.+)-(\\d{4}-\\d{2}-\\d{2})".r
+
+    case class NameAndVersion(name: String, version: String)
 
     val jsonStream = Files.list(Paths.get(s"aws-sdk-js/apis")).collect(Collectors.toList[Path])
     val servicesJsons = jsonStream.asScala
       .flatMap { path =>
         versionPattern.findFirstMatchIn(path.getFileName.toString).map { m =>
-          m.group(1) -> m.group(2)
+          NameAndVersion(name = m.group(1), version = m.group(2))
         }
       }
       .toSet
-      .groupMap[String, String](_._1)(_._2)
+      .groupMap[String, String](_.name)(_.version)
 
     val newServiceKeys = (servicesJsons.keySet -- apiVersionsMap.keySet)
     if (newServiceKeys.nonEmpty) {
@@ -690,15 +663,20 @@ object ScalaJsGen {
       throw new Exception("Newly-added services found !!")
     }
 
-    val oldVersions = servicesJsons.filter(_._2.sizeIs >= 2).flatMap {
-      case (key, versions) =>
-        val latestVersion = versions.max
-        if (latestVersion > apiVersionsMap(key)) {
-          Some(key -> latestVersion)
-        } else {
-          None
-        }
-    }
+    val oldVersions = servicesJsons
+      .filter {
+        case (_, group) =>
+          group.sizeIs >= 2
+      }
+      .flatMap {
+        case (key, versions) =>
+          val latestVersion = versions.max
+          if (latestVersion > apiVersionsMap(key)) {
+            Some(key -> latestVersion)
+          } else {
+            None
+          }
+      }
     if (oldVersions.nonEmpty) {
       oldVersions.foreach {
         case (key, latestVersion) =>
