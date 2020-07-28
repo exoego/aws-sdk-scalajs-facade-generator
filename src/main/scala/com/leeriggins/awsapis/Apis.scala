@@ -28,7 +28,7 @@ object Apis {
     "cloud9"                       -> "2017-09-23",
     "clouddirectory"               -> "2017-01-11",
     "cloudformation"               -> "2010-05-15",
-    "cloudfront"                   -> "2019-03-26",
+    "cloudfront"                   -> "2020-05-31",
     "cloudhsm"                     -> "2014-05-30",
     "cloudhsmv2"                   -> "2017-04-28",
     "cloudsearch"                  -> "2013-01-01",

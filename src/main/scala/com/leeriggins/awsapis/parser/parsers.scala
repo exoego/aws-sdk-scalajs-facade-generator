@@ -87,6 +87,13 @@ object FieldUtils {
         case _                   => None
       }
     }
+
+    def getDescription(): Option[String] = {
+      getFieldValue("description") match {
+        case Some(JString(value)) => Some(value)
+        case _                    => None
+      }
+    }
   }
 
   /** Retrieve a single optional field. */
@@ -205,6 +212,7 @@ object AwsApiTypeParser {
             eventpayload = fields.getBoolean("eventpayload"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             flattened = fields.getBoolean("flattened"),
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage"),
@@ -235,6 +243,7 @@ object AwsApiTypeParser {
             min = fields.getInt("min"),
             max = fields.getInt("max"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             flattened = flattened,
             sensitive = sensitive,
             deprecated = deprecated,
@@ -259,6 +268,7 @@ object AwsApiTypeParser {
             members = members,
             xmlOrder = xmlOrder,
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
@@ -280,6 +290,7 @@ object AwsApiTypeParser {
             required = required,
             members = members,
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             payload = fields.getString("payload"),
             sensitive = sensitive,
             deprecated = deprecated,
@@ -300,6 +311,7 @@ object AwsApiTypeParser {
             min = fields.getInt("min"),
             max = fields.getInt("max"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             flattened = flattened,
             sensitive = sensitive,
             deprecated = deprecated,
@@ -315,6 +327,7 @@ object AwsApiTypeParser {
             max = fields.getInt("max"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
@@ -329,6 +342,7 @@ object AwsApiTypeParser {
             max = fields.getInt("max"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
@@ -341,6 +355,7 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage"),
@@ -355,6 +370,7 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage"),
@@ -371,6 +387,7 @@ object AwsApiTypeParser {
             timestampFormat = timestampFormat,
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
@@ -383,6 +400,7 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
@@ -400,6 +418,7 @@ object AwsApiTypeParser {
             min = fields.getInt("min"),
             max = fields.getInt("max"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             streaming = streaming,
             sensitive = sensitive,
             deprecated = deprecated,
@@ -418,6 +437,7 @@ object AwsApiTypeParser {
             pattern = fields.getString("pattern"),
             symbols = enumSymbols,
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
@@ -436,6 +456,7 @@ object AwsApiTypeParser {
             pattern = fields.getString("pattern"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             streaming = streaming,
             sensitive = sensitive,
             deprecated = deprecated,
@@ -457,6 +478,7 @@ object AwsApiTypeParser {
             pattern = fields.getString("pattern"),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
+            description = fields.getDescription(),
             streaming = streaming,
             sensitive = sensitive,
             deprecated = deprecated,
@@ -497,6 +519,7 @@ object AwsApiTypeParser {
         val baseFields = optField("location", awsApiType.location) ::
           optField("locationName", awsApiType.locationName) ::
           optField("documentation", awsApiType.documentation) ::
+          optField("description", awsApiType.description) ::
           optField("sensitive", awsApiType.sensitive) ::
           optField("deprecated", awsApiType.deprecated) ::
           optField("deprecatedMessage", awsApiType.deprecatedMessage) ::

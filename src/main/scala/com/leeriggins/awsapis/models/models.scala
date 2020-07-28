@@ -129,6 +129,7 @@ case class XmlNamespace(uri: Option[String], prefix: Option[String])
 abstract sealed trait AwsApiType {
   val location: Option[String]
   val locationName: Option[String]
+  val description: Option[String]
   val documentation: Option[String]
   val sensitive: Option[Boolean]
   val deprecated: Option[Boolean]
@@ -153,6 +154,7 @@ abstract sealed trait StringType extends AwsApiBoxedType {
   val pattern: Option[String]
   val idempotencyToken: Option[Boolean]
   val jsonvalue: Option[Boolean]
+
 }
 
 object AwsApiType {
@@ -162,6 +164,7 @@ object AwsApiType {
                       min: Option[BigInt],
                       max: Option[BigInt],
                       documentation: Option[String],
+                      description: Option[String],
                       flattened: Option[Boolean],
                       sensitive: Option[Boolean],
                       deprecated: Option[Boolean],
@@ -176,6 +179,7 @@ object AwsApiType {
                      min: Option[BigInt],
                      max: Option[BigInt],
                      documentation: Option[String],
+                     description: Option[String],
                      flattened: Option[Boolean],
                      sensitive: Option[Boolean],
                      deprecated: Option[Boolean],
@@ -191,6 +195,7 @@ object AwsApiType {
                            required: Option[List[String]] = None,
                            members: Option[Map[String, AwsApiType]],
                            documentation: Option[String],
+                           description: Option[String],
                            payload: Option[String],
                            sensitive: Option[Boolean],
                            deprecated: Option[Boolean],
@@ -210,6 +215,7 @@ object AwsApiType {
                        exception: Boolean,
                        fault: Option[Boolean],
                        documentation: Option[String],
+                       description: Option[String],
                        sensitive: Option[Boolean],
                        deprecated: Option[Boolean],
                        deprecatedMessage: Option[String]
@@ -223,6 +229,7 @@ object AwsApiType {
                        eventpayload: Option[Boolean],
                        box: Option[Boolean],
                        documentation: Option[String],
+                       description: Option[String],
                        flattened: Option[Boolean],
                        deprecated: Option[Boolean],
                        deprecatedMessage: Option[String],
@@ -244,6 +251,7 @@ object AwsApiType {
                          max: Option[BigInt],
                          box: Option[Boolean],
                          documentation: Option[String],
+                         description: Option[String],
                          sensitive: Option[Boolean],
                          deprecated: Option[Boolean],
                          deprecatedMessage: Option[String]
@@ -256,6 +264,7 @@ object AwsApiType {
                       max: Option[BigInt],
                       box: Option[Boolean],
                       documentation: Option[String],
+                      description: Option[String],
                       sensitive: Option[Boolean],
                       deprecated: Option[Boolean],
                       deprecatedMessage: Option[String]
@@ -266,6 +275,7 @@ object AwsApiType {
                         locationName: Option[String],
                         box: Option[Boolean],
                         documentation: Option[String],
+                        description: Option[String],
                         sensitive: Option[Boolean],
                         deprecated: Option[Boolean],
                         deprecatedMessage: Option[String],
@@ -277,6 +287,7 @@ object AwsApiType {
                        locationName: Option[String],
                        box: Option[Boolean],
                        documentation: Option[String],
+                       description: Option[String],
                        sensitive: Option[Boolean],
                        deprecated: Option[Boolean],
                        deprecatedMessage: Option[String],
@@ -288,6 +299,7 @@ object AwsApiType {
                            locationName: Option[String],
                            box: Option[Boolean],
                            documentation: Option[String],
+                           description: Option[String],
                            timestampFormat: Option[String],
                            sensitive: Option[Boolean],
                            deprecated: Option[Boolean],
@@ -298,6 +310,7 @@ object AwsApiType {
                          locationName: Option[String],
                          box: Option[Boolean],
                          documentation: Option[String],
+                         description: Option[String],
                          sensitive: Option[Boolean],
                          deprecated: Option[Boolean],
                          deprecatedMessage: Option[String]
@@ -310,6 +323,7 @@ object AwsApiType {
                       min: Option[BigInt],
                       max: Option[BigInt],
                       documentation: Option[String],
+                      description: Option[String],
                       streaming: Option[Boolean],
                       sensitive: Option[Boolean],
                       deprecated: Option[Boolean],
@@ -324,6 +338,7 @@ object AwsApiType {
                       max: Option[BigInt],
                       pattern: Option[String],
                       documentation: Option[String],
+                      description: Option[String],
                       symbols: List[String],
                       sensitive: Option[Boolean],
                       deprecated: Option[Boolean],
@@ -339,6 +354,7 @@ object AwsApiType {
                                pattern: Option[String],
                                box: Option[Boolean],
                                documentation: Option[String],
+                               description: Option[String],
                                streaming: Option[Boolean],
                                sensitive: Option[Boolean],
                                deprecated: Option[Boolean],
@@ -356,6 +372,7 @@ object AwsApiType {
                                 pattern: Option[String],
                                 box: Option[Boolean],
                                 documentation: Option[String],
+                                description: Option[String],
                                 streaming: Option[Boolean],
                                 sensitive: Option[Boolean],
                                 deprecated: Option[Boolean],
