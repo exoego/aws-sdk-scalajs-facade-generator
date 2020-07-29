@@ -319,8 +319,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
 
     val valuesList =
-      s"""  @deprecated("Unclear usecase, so will be removed to reduce footprint and initialization overhead.", "v0.31.0") """ +
-        s"val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"
+      s"""  @deprecated("This will be removed to reduce footprint and initialization overhead.", "v0.31.0")
+         |  val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))""".stripMargin
 
     val enumDefinition =
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
