@@ -315,10 +315,10 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
     val symbolDefinitions = symbolMap.map {
       case (symbolName, symbol) =>
-        s"""  @inline final val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
+        s"""  val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
     }
 
-    val valuesList = s"""  @inline final val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"""
+    val valuesList = s"""  val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"""
 
     val enumDefinition =
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
