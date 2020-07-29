@@ -318,7 +318,9 @@ class ScalaJsGen(projectDir: File, api: Api) {
         s"""  val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
     }
 
-    val valuesList = s"""  val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"""
+    val valuesList =
+      s"""  @deprecated("Unclear usecase, so will be removed to reduce footprint and initialization overhead.", "v0.31.0") """ +
+        s"val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))"
 
     val enumDefinition =
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
