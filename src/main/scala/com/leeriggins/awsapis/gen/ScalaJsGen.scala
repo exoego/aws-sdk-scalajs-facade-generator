@@ -318,9 +318,10 @@ class ScalaJsGen(projectDir: File, api: Api) {
         s"""  val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
     }
 
+    val constantNames = symbolMap.map { case (name, _) => name }.mkString(", ")
     val valuesList =
       s"""  @deprecated("This will be removed to reduce footprint and initialization overhead.", "v0.31.0")
-         |  val values = js.Object.freeze(js.Array(${symbolMap.map(_._1).mkString(", ")}))""".stripMargin
+         |  val values = js.Object.freeze(js.Array($constantNames))""".stripMargin
 
     val enumDefinition =
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
