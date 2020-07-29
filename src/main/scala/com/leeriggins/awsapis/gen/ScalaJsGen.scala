@@ -324,7 +324,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
          |@js.native
          |sealed trait ${name} extends js.Any
-         |object ${name} extends js.Object {
+         |object ${name} {
          |${symbolDefinitions.mkString("\n")}
          |
          |${valuesList}
