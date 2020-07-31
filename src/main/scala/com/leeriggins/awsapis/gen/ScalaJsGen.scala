@@ -315,7 +315,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
     val symbolDefinitions = symbolMap.map {
       case (symbolName, symbol) =>
-        s"""  @inline def ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
+        s"""  val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
     }
 
     val constantNames = symbolMap.map { case (name, _) => name }.mkString(", ")

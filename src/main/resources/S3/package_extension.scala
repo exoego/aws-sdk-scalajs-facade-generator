@@ -1,6 +1,8 @@
 @js.native
 sealed trait Operation extends js.Any
 object Operation {
+  // These are used for API request, not response, so unlikely to be used in pattern matching.
+  // So these can be safely `def` to be inlined.
   @inline def abortMultipartUpload = "abortMultipartUpload".asInstanceOf[Operation]
   @inline def completeMultipartUpload = "completeMultipartUpload".asInstanceOf[Operation]
   @inline def copyObject = "copyObject".asInstanceOf[Operation]
