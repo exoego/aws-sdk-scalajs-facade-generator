@@ -1,6 +1,6 @@
 @js.native
 sealed trait Operation extends js.Any
-object Operation extends js.Object {
+object Operation {
   @inline def abortMultipartUpload = "abortMultipartUpload".asInstanceOf[Operation]
   @inline def completeMultipartUpload = "completeMultipartUpload".asInstanceOf[Operation]
   @inline def copyObject = "copyObject".asInstanceOf[Operation]
