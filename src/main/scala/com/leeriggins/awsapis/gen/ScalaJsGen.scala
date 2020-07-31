@@ -320,7 +320,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
     val constantNames = symbolMap.map { case (name, _) => name }.mkString(", ")
     val valuesList =
-      s"""  @inline def values = js.Object.freeze(js.Array($constantNames))""".stripMargin
+      s"""  @inline def values = js.Array($constantNames)""".stripMargin
 
     val enumDefinition =
       s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
