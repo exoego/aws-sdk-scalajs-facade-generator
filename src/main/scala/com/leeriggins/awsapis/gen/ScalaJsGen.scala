@@ -115,7 +115,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         operation.deprecated match {
           case Some(true) => ""
           case _ =>
-            s"  @inline def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise().toFuture"
+            s"    @inline def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise().toFuture"
         }
     }
 
@@ -132,7 +132,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
     s"""  implicit final class ${api.serviceClassName}Ops(private val service: ${api.serviceClassName}) extends AnyVal {
        |
        |${operations.toIndexedSeq.sorted.mkString("\n")}
-       |${opsExtension}}""".stripMargin
+       |${opsExtension}
+       |  }""".stripMargin
   }
 
   private def serviceDefinition(): String = {
@@ -153,7 +154,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
           else ""
         }
 
-        s"""  ${deprecated} def ${lowerFirst(opName)}(${parameters}): Request[${outputType}] = js.native"""
+        s"""    ${deprecated}def ${lowerFirst(opName)}(${parameters}): Request[${outputType}] = js.native"""
     }
 
     s"""  @js.native
@@ -203,7 +204,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         doc => paragraphPattern.replaceAllIn(doc, matched => s"${matched.group(1)}\n")
       )
       val formattedDoc = reps.foldLeft(documentation) { case (d, pair) => pair(d) }.split("\n").filter(_.nonEmpty)
-      formattedDoc.mkString(sep = "\n * ", start = "/**\n * ", end = "\n */")
+      formattedDoc.mkString(sep = "\n * ", start = "/**\n  * ", end = "\n  */")
     }
 
     val deprecation = awsApiType.deprecated.flatMap { dep =>
@@ -270,7 +271,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
                |""".stripMargin
           case false => ""
         }
-        Some(s"""${deprecated} type ${shapeName} = ${className}""")
+        Some(s"""${deprecated}type ${shapeName} = ${className}""")
       } else {
         None
       }
@@ -379,7 +380,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         } else {
           s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
         }
-        s"""    ${cleanName(memberName)}: ${memberTypeStr}"""
+        s"""      ${cleanName(memberName)}: ${memberTypeStr}"""
     }.mkString(",\n"))
   }
 
@@ -387,7 +388,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
                                              requiredFields: Set[String]
   ) = {
     val instanceWithRequiredFields = if (requiredFields.isEmpty) {
-      "val __obj = js.Dynamic.literal()"
+      "    val __obj = js.Dynamic.literal()"
     } else {
       val requiredFieldsStr = sortedMembers.fold("")(_.filter {
         case (memberName, _) => requiredFields(memberName)
@@ -396,9 +397,9 @@ class ScalaJsGen(projectDir: File, api: Api) {
           val memberType = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
           s"""      "${memberName}" -> ${memberType}"""
       }.mkString(",\n"))
-      s"""val __obj = js.Dynamic.literal(
-        |  ${requiredFieldsStr}
-        |)
+      s"""    val __obj = js.Dynamic.literal(
+        |${requiredFieldsStr}
+        |    )
         |""".stripMargin
     }
     val optionalFields = sortedMembers.fold("")(
@@ -406,7 +407,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
         .map {
           case (memberName, _) =>
             val clean = cleanName(memberName)
-            s"""  ${clean}.foreach(__v => __obj.updateDynamic("${memberName}")(__v.asInstanceOf[js.Any]))"""
+            s"""    ${clean}.foreach(__v => __obj.updateDynamic("${memberName}")(__v.asInstanceOf[js.Any]))"""
         }
         .mkString("\n")
     )
