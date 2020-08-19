@@ -30,6 +30,7 @@ case class Api(version: Option[String],
     case "codestarnotifications"       => "CodeStarNotifications"
     case "forecast"                    => "Forecast"
     case "forecastquery"               => "ForecastQuery"
+    case "identitystore"               => "IdentityStore"
     case "imagebuilder"                => "Imagebuilder"
     case "kendra"                      => "Kendra"
     case "kinesisvideosignaling"       => "KinesisVideoSignalingChannels"
