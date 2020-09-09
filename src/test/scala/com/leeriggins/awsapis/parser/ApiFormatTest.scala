@@ -12,21 +12,20 @@ class ApiFormatTest extends AnyFunSpec {
   implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
   def passTestsForType(tpe: ApiType): Unit = {
-    apiVersions.foreach {
-      case (apiName, apiVersion) =>
-        it(s"deserialize then serialize ${apiName} version ${apiVersion} (${tpe}) without changes") {
-          val text       = Apis.json(apiName, apiVersion, tpe)
-          val parsedText = parse(text)
+    apiVersions.foreach { case (apiName, apiVersion) =>
+      it(s"deserialize then serialize ${apiName} version ${apiVersion} (${tpe}) without changes") {
+        val text       = Apis.json(apiName, apiVersion, tpe)
+        val parsedText = parse(text)
 
-          val api = parsedText.extract[Api]
+        val api = parsedText.extract[Api]
 
-          val reserialized = parse(write(api))
+        val reserialized = parse(write(api))
 
-          val Diff(changed, added, removed) = parsedText diff reserialized
-          assert(changed == JNothing)
-          assert(added == JNothing)
-          assert(removed == JNothing)
-        }
+        val Diff(changed, added, removed) = parsedText diff reserialized
+        assert(changed == JNothing)
+        assert(added == JNothing)
+        assert(removed == JNothing)
+      }
     }
   }
 
