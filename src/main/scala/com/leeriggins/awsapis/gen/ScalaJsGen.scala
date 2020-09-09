@@ -44,11 +44,10 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def genContents(): String = {
-    val shapeTypeRefs = api.shapes.toSeq.flatMap {
-      case (shapeName, shapeType) =>
-        genShapeTypeRef(shapeName, shapeType).map { typeRef =>
-          shapeName -> typeRef
-        }
+    val shapeTypeRefs = api.shapes.toSeq.flatMap { case (shapeName, shapeType) =>
+      genShapeTypeRef(shapeName, shapeType).map { typeRef =>
+        shapeName -> typeRef
+      }
     }
 
     val allTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
@@ -96,27 +95,26 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def futureExtensionMethodDefinition(): String = {
-    val operations = api.operations.toSeq.map {
-      case (opName, operation) =>
-        val outputType = operation.output
-          .flatMap { output =>
-            className(output.apiType)
-          }
-          .getOrElse("js.Object")
-
-        val parameters = operation.input.fold("") { input =>
-          val inputName = className(input.apiType).get
-          s"params: ${inputName}"
+    val operations = api.operations.toSeq.map { case (opName, operation) =>
+      val outputType = operation.output
+        .flatMap { output =>
+          className(output.apiType)
         }
+        .getOrElse("js.Object")
 
-        val methodName = lowerFirst(opName)
-        val arg        = operation.input.map(_ => "params").getOrElse("")
-        // Don't generate extension method for deprecated API
-        operation.deprecated match {
-          case Some(true) => ""
-          case _ =>
-            s"    @inline def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise().toFuture"
-        }
+      val parameters = operation.input.fold("") { input =>
+        val inputName = className(input.apiType).get
+        s"params: ${inputName}"
+      }
+
+      val methodName = lowerFirst(opName)
+      val arg        = operation.input.map(_ => "params").getOrElse("")
+      // Don't generate extension method for deprecated API
+      operation.deprecated match {
+        case Some(true) => ""
+        case _ =>
+          s"    @inline def ${methodName}Future(${parameters}): Future[${outputType}] = service.${methodName}(${arg}).promise().toFuture"
+      }
     }
 
     val insertFile = new File(s"src/main/resources/${api.serviceClassName}", s"ops_extension.scala")
@@ -137,24 +135,23 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 
   private def serviceDefinition(): String = {
-    val operations = api.operations.toSeq.map {
-      case (opName, operation) =>
-        val outputType = operation.output
-          .flatMap { output =>
-            className(output.apiType)
-          }
-          .getOrElse("js.Object")
-
-        val parameters = operation.input.fold("") { input =>
-          val inputName = className(input.apiType).get
-          s"params: ${inputName}"
+    val operations = api.operations.toSeq.map { case (opName, operation) =>
+      val outputType = operation.output
+        .flatMap { output =>
+          className(output.apiType)
         }
-        val deprecated = operation.deprecated.fold("") { dep =>
-          if (dep) s"""@deprecated("${operation.deprecatedMessage.getOrElse("Deprecated in AWS SDK")}", "forever")"""
-          else ""
-        }
+        .getOrElse("js.Object")
 
-        s"""    ${deprecated}def ${lowerFirst(opName)}(${parameters}): Request[${outputType}] = js.native"""
+      val parameters = operation.input.fold("") { input =>
+        val inputName = className(input.apiType).get
+        s"params: ${inputName}"
+      }
+      val deprecated = operation.deprecated.fold("") { dep =>
+        if (dep) s"""@deprecated("${operation.deprecatedMessage.getOrElse("Deprecated in AWS SDK")}", "forever")"""
+        else ""
+      }
+
+      s"""    ${deprecated}def ${lowerFirst(opName)}(${parameters}): Request[${outputType}] = js.native"""
     }
 
     s"""  @js.native
@@ -314,9 +311,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
     val symbolMap = enum.symbols.map { symbol =>
       cleanName(symbol) -> symbol
     }
-    val symbolDefinitions = symbolMap.map {
-      case (symbolName, symbol) =>
-        s"""  val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
+    val symbolDefinitions = symbolMap.map { case (symbolName, symbol) =>
+      s"""  val ${symbolName} = "${symbol}".asInstanceOf[${name}]"""
     }
 
     val constantNames = symbolMap.map { case (name, _) => name }.mkString(", ")
@@ -342,9 +338,8 @@ class ScalaJsGen(projectDir: File, api: Api) {
         genTypesRecursive(memberName, memberType, types)
     })
 
-    val memberFields = error.members.fold("")(_.map {
-      case (memberName, memberType) =>
-        s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
+    val memberFields = error.members.fold("")(_.map { case (memberName, memberType) =>
+      s"""  val ${cleanName(memberName)}: ${className(memberType).getOrElse(memberName)}"""
     }.mkString("\n"))
 
     val errorDefinition =
@@ -359,28 +354,26 @@ class ScalaJsGen(projectDir: File, api: Api) {
   private def genStructureMemberFields(sortedMembers: Option[Seq[(String, AwsApiType)]],
                                        requiredFields: Set[String]
   ) = {
-    sortedMembers.fold("")(_.map {
-      case (memberName, memberType) =>
-        val memberType_ = if (requiredFields(memberName)) {
-          s"${className(memberType).getOrElse(memberName)}"
-        } else {
-          s"js.UndefOr[${className(memberType).getOrElse(memberName)}]"
-        }
-        s"""  var ${cleanName(memberName)}: ${memberType_}"""
+    sortedMembers.fold("")(_.map { case (memberName, memberType) =>
+      val memberType_ = if (requiredFields(memberName)) {
+        s"${className(memberType).getOrElse(memberName)}"
+      } else {
+        s"js.UndefOr[${className(memberType).getOrElse(memberName)}]"
+      }
+      s"""  var ${cleanName(memberName)}: ${memberType_}"""
     }.mkString("\n"))
   }
 
   private def genStructureConstructorArgs(sortedMembers: Option[Seq[(String, AwsApiType)]],
                                           requiredFields: Set[String]
   ) = {
-    sortedMembers.fold("")(_.map {
-      case (memberName, memberType) =>
-        val memberTypeStr = if (requiredFields(memberName)) {
-          s"${className(memberType).getOrElse(memberName)}"
-        } else {
-          s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
-        }
-        s"""      ${cleanName(memberName)}: ${memberTypeStr}"""
+    sortedMembers.fold("")(_.map { case (memberName, memberType) =>
+      val memberTypeStr = if (requiredFields(memberName)) {
+        s"${className(memberType).getOrElse(memberName)}"
+      } else {
+        s"js.UndefOr[${className(memberType).getOrElse(memberName)}] = js.undefined"
+      }
+      s"""      ${cleanName(memberName)}: ${memberTypeStr}"""
     }.mkString(",\n"))
   }
 
@@ -390,12 +383,11 @@ class ScalaJsGen(projectDir: File, api: Api) {
     val instanceWithRequiredFields = if (requiredFields.isEmpty) {
       "    val __obj = js.Dynamic.literal()"
     } else {
-      val requiredFieldsStr = sortedMembers.fold("")(_.filter {
-        case (memberName, _) => requiredFields(memberName)
-      }.map {
-        case (memberName, _) =>
-          val memberType = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
-          s"""      "${memberName}" -> ${memberType}"""
+      val requiredFieldsStr = sortedMembers.fold("")(_.filter { case (memberName, _) =>
+        requiredFields(memberName)
+      }.map { case (memberName, _) =>
+        val memberType = s"${cleanName(memberName)}.asInstanceOf[js.Any]"
+        s"""      "${memberName}" -> ${memberType}"""
       }.mkString(",\n"))
       s"""    val __obj = js.Dynamic.literal(
         |${requiredFieldsStr}
@@ -404,10 +396,9 @@ class ScalaJsGen(projectDir: File, api: Api) {
     }
     val optionalFields = sortedMembers.fold("")(
       _.filterNot { case (memberName, _) => requiredFields(memberName) }
-        .map {
-          case (memberName, _) =>
-            val clean = cleanName(memberName)
-            s"""    ${clean}.foreach(__v => __obj.updateDynamic("${memberName}")(__v.asInstanceOf[js.Any]))"""
+        .map { case (memberName, _) =>
+          val clean = cleanName(memberName)
+          s"""    ${clean}.foreach(__v => __obj.updateDynamic("${memberName}")(__v.asInstanceOf[js.Any]))"""
         }
         .mkString("\n")
     )
@@ -514,17 +505,16 @@ object ScalaJsGen {
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
     val types = com.leeriggins.awsapis.Apis.versions
-      .map {
-        case (name, version) =>
-          val text       = json(name, version, ApiType.normal)
-          val parsedText = parse(text)
-          val api        = parsedText.extract[Api]
-          val subDir     = new File(projectDir, s"services/${api.serviceClassName.toLowerCase()}")
-          val gen        = new ScalaJsGen(subDir, api)
-          gen.gen()
+      .map { case (name, version) =>
+        val text       = json(name, version, ApiType.normal)
+        val parsedText = parse(text)
+        val api        = parsedText.extract[Api]
+        val subDir     = new File(projectDir, s"services/${api.serviceClassName.toLowerCase()}")
+        val gen        = new ScalaJsGen(subDir, api)
+        gen.gen()
 
-          val qualifiedName = s"services.${gen.scalaServiceName}.${api.serviceClassName}"
-          s"""    type ${api.serviceClassName} = ${qualifiedName}
+        val qualifiedName = s"services.${gen.scalaServiceName}.${api.serviceClassName}"
+        s"""    type ${api.serviceClassName} = ${qualifiedName}
              |    def ${api.serviceClassName}(): ${qualifiedName} = new ${qualifiedName}()
              |    def ${api.serviceClassName}(config: AWSConfig): ${qualifiedName} = new ${qualifiedName}(config)
              |""".stripMargin
@@ -563,12 +553,11 @@ object ScalaJsGen {
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
     val types = com.leeriggins.awsapis.Apis.versions
-      .map {
-        case (name, version) =>
-          val text       = json(name, version, ApiType.normal)
-          val parsedText = parse(text)
-          val api        = parsedText.extract[Api]
-          api.sdkClassName.toLowerCase
+      .map { case (name, version) =>
+        val text       = json(name, version, ApiType.normal)
+        val parsedText = parse(text)
+        val api        = parsedText.extract[Api]
+        api.sdkClassName.toLowerCase
       }
       .sorted
       .map { sdkClassName =>
@@ -605,12 +594,11 @@ object ScalaJsGen {
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
     val types = com.leeriggins.awsapis.Apis.versions
-      .map {
-        case (name, version) =>
-          val text       = json(name, version, ApiType.normal)
-          val parsedText = parse(text)
-          val api        = parsedText.extract[Api]
-          api.serviceClassName
+      .map { case (name, version) =>
+        val text       = json(name, version, ApiType.normal)
+        val parsedText = parse(text)
+        val api        = parsedText.extract[Api]
+        api.serviceClassName
       }
       .sorted
       .map { sdkClassName =>
@@ -667,23 +655,20 @@ object ScalaJsGen {
     }
 
     val oldVersions = servicesJsons
-      .filter {
-        case (_, group) =>
-          group.sizeIs >= 2
+      .filter { case (_, group) =>
+        group.sizeIs >= 2
       }
-      .flatMap {
-        case (key, versions) =>
-          val latestVersion = versions.max
-          if (latestVersion > apiVersionsMap(key)) {
-            Some(key -> latestVersion)
-          } else {
-            None
-          }
+      .flatMap { case (key, versions) =>
+        val latestVersion = versions.max
+        if (latestVersion > apiVersionsMap(key)) {
+          Some(key -> latestVersion)
+        } else {
+          None
+        }
       }
     if (oldVersions.nonEmpty) {
-      oldVersions.foreach {
-        case (key, latestVersion) =>
-          println(s""" "${key}" -> "${latestVersion}",  """)
+      oldVersions.foreach { case (key, latestVersion) =>
+        println(s""" "${key}" -> "${latestVersion}",  """)
       }
       throw new Exception("Newer version found !!")
     }
