@@ -200,8 +200,12 @@ class ScalaJsGen(projectDir: File, api: Api) {
         doc => listItemPattern.replaceAllIn(doc, matched => s"* ${matched.group(1)}\n"),
         doc => paragraphPattern.replaceAllIn(doc, matched => s"${matched.group(1)}\n")
       )
-      val formattedDoc = reps.foldLeft(documentation) { case (d, pair) => pair(d) }.split("\n").filter(_.nonEmpty)
-      formattedDoc.mkString(sep = "\n  * ", start = "/**\n  * ", end = "\n  */")
+      val formattedDoc = reps
+        .foldLeft(documentation) { case (d, pair) => pair(d) }
+        .split("\n")
+        .filter(_.nonEmpty)
+        .map(line => s" ${line.trim}")
+      formattedDoc.mkString(sep = "\n  *", start = "/**", end = "\n  */")
     }
 
     val deprecation = awsApiType.deprecated.flatMap { dep =>
@@ -405,6 +409,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
     s"""${instanceWithRequiredFields}
       |${optionalFields}""".stripMargin
+      .replaceFirst("\n+$", "")
   }
 
   private def requiredAndAlphabetical(requiredFields: Set[String]): ((String, AwsApiType)) => (Boolean, String) = {
@@ -430,6 +435,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
          |trait ${typeName} extends js.Object {
          |${memberFields}
          |}""".stripMargin
+        .replaceFirst(" \\{\\s+\\}", "")
     val insertFile = new File(s"src/main/resources/${api.serviceClassName}", s"${typeName}.scala")
     val insertContent = if (insertFile.exists()) {
       val source = io.Source.fromFile(insertFile, "UTF-8")
@@ -451,6 +457,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
          |    __obj.asInstanceOf[${typeName}]
          |  }
          |${insertContent}}""".stripMargin
+        .replaceFirst("\\(\\s+\\)", "()")
 
     withMemberTypes + (typeName -> structureDefinition)
   }
