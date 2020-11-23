@@ -465,6 +465,7 @@ class ScalaJsGen(projectDir: File, api: Api) {
 
 object ScalaJsGen {
   val scalaKeywords = Set(
+    "abstract",
     "case",
     "catch",
     "class",
@@ -474,12 +475,18 @@ object ScalaJsGen {
     "extends",
     "false",
     "final",
+    "finally",
     "for",
+    "forSome",
     "if",
     "implicit",
+    "import",
+    "lazy",
     "match",
     "new",
     "null",
+    "object",
+    "override",
     "package",
     "print",
     "printf",
@@ -488,15 +495,19 @@ object ScalaJsGen {
     "protected",
     "public",
     "return",
+    "sealed",
+    "super",
+    "this",
     "throw",
     "trait",
     "true",
-    "type",
     "try",
+    "type",
     "val",
     "var",
     "while",
-    "with"
+    "with",
+    "yield"
   )
 
   implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
