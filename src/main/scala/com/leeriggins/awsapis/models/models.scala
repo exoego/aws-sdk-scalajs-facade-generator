@@ -90,7 +90,7 @@ case class Operation(http: Option[Http],
                      output: Option[Output],
                      errors: Option[List[Error]],
                      authtype: Option[String],
-                     endpointdiscovery: Option[Map[String, AwsApiType]],
+                     endpointdiscovery: Option[EndpointDiscovery],
                      endpointoperation: Option[Boolean],
                      endpoint: Option[Endpoint],
                      documentation: Option[String],
@@ -103,6 +103,8 @@ case class Operation(http: Option[Http],
                      idempotent: Option[Boolean],
                      internal: Option[Boolean]
 )
+
+case class EndpointDiscovery(required: Option[Boolean])
 
 case class Endpoint(hostPrefix: Option[String])
 
@@ -198,6 +200,7 @@ object AwsApiType {
                            documentation: Option[String],
                            description: Option[String],
                            payload: Option[String],
+                           union: Option[Boolean],
                            sensitive: Option[Boolean],
                            deprecated: Option[Boolean],
                            deprecatedMessage: Option[String],
@@ -225,6 +228,7 @@ object AwsApiType {
   /** Describes a reference to a type defined in the service's shapes. */
   case class ShapeType(location: Option[String],
                        locationName: Option[String],
+                       hostLabel: Option[Boolean],
                        shape: String,
                        jsonvalue: Option[Boolean],
                        eventpayload: Option[Boolean],
@@ -238,6 +242,7 @@ object AwsApiType {
                        xmlOrder: Option[List[String]],
                        xmlAttribute: Option[Boolean],
                        queryName: Option[String],
+                       union: Option[Boolean],
                        streaming: Option[Boolean],
                        enum: Option[List[String]],
                        tags: Option[List[String]],
@@ -349,6 +354,7 @@ object AwsApiType {
 
   case class DefaultStringType(location: Option[String],
                                xmlAttribute: Option[Boolean],
+                               hostLabel: Option[Boolean],
                                locationName: Option[String],
                                min: Option[BigInt],
                                max: Option[BigInt],
@@ -382,4 +388,5 @@ object AwsApiType {
                                 jsonvalue: Option[Boolean]
   ) extends StringType
       with Sized
+
 }

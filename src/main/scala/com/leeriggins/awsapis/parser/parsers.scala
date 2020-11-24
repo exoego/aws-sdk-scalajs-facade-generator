@@ -216,6 +216,8 @@ object AwsApiTypeParser {
             flattened = fields.getBoolean("flattened"),
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage"),
+            union = fields.getBoolean("union"),
+            hostLabel = fields.getBoolean("hostLabel"),
             xmlNamespace = xmlNamespace,
             xmlOrder = xmlOrder,
             xmlAttribute = fields.getBoolean("xmlAttribute"),
@@ -292,6 +294,7 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             description = fields.getDescription(),
             payload = fields.getString("payload"),
+            union = fields.getBoolean("union"),
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage"),
@@ -472,6 +475,7 @@ object AwsApiTypeParser {
           DefaultStringType(
             location = fields.getLocation(),
             xmlAttribute = xmlAttribute,
+            hostLabel = fields.getBoolean("hostLabel"),
             locationName = fields.getLocationName(),
             min = fields.getInt("min"),
             max = fields.getInt("max"),
@@ -594,7 +598,8 @@ object AwsApiTypeParser {
           JObject(typeField +: string.defaultFields())
         }
         case string: DefaultStringType => {
-          JObject(string.defaultFields())
+          val opts = optField("hostLabel", string.hostLabel).toList
+          JObject(string.defaultFields() ++ opts)
         }
       }
 
@@ -676,10 +681,12 @@ object AwsApiTypeParser {
         optField("xmlAttribute", shape.xmlAttribute),
         optField("tags", shape.tags),
         optField("enum", shape.enum),
+        optField("hostLabel", shape.hostLabel),
         optField("queryName", shape.queryName),
         optField("flattened", shape.flattened),
         optField("wrapper", shape.wrapper),
         optField("streaming", shape.streaming),
+        optField("union", shape.union),
         optField("jsonvalue", shape.jsonvalue),
         optField("idempotencyToken", shape.idempotencyToken)
       ).flatten
@@ -703,21 +710,23 @@ object AwsApiTypeParser {
           )
       }
 
-      val membersField      = optField("members", structure.members)
-      val payloadField      = optField("payload", structure.payload)
-      val sensitiveField    = optField("sensitive", structure.sensitive)
-      val xmlNamespaceField = optField("xmlNamespace", structure.xmlNamespace)
-      val xmlOrderField     = optField("xmlOrder", structure.xmlOrder)
-      val wrapperField      = optField("wrapper", structure.wrapper)
-      val eventField        = optField("event", structure.event)
-      val eventstreamField  = optField("eventstream", structure.eventstream)
-      val eventpayloadField = optField("eventpayload", structure.eventpayload)
-
+      val optFields = Seq(
+        optField("members", structure.members),
+        optField("payload", structure.payload),
+        optField("sensitive", structure.sensitive),
+        optField("xmlNamespace", structure.xmlNamespace),
+        optField("xmlOrder", structure.xmlOrder),
+        optField("wrapper", structure.wrapper),
+        optField("event", structure.event),
+        optField("eventstream", structure.eventstream),
+        optField("eventpayload", structure.eventpayload),
+        optField("union", structure.union)
+      ).flatten
       val fields =
         JField(
           "type",
           JString("structure")
-        ) +: (requiredField ++ membersField ++ payloadField ++ sensitiveField ++ xmlNamespaceField ++ xmlOrderField ++ wrapperField ++ eventField ++ eventstreamField ++ eventpayloadField)
+        ) +: (requiredField ++ optFields)
       JObject(structure.defaultFields() ++ fields)
     }
 
