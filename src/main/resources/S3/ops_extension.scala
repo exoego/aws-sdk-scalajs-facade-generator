@@ -65,3 +65,32 @@ def deleteObjectsByPrefixFuture(bucket: String, prefix: String)(implicit executo
   loop()
 }
 
+/**
+ * Uploads an arbitrarily sized buffer, blob, or stream, using intelligent concurrent handling of parts if the payload is large enough.
+ * Note that this is the only operation for which the SDK can retry requests with stream bodies.
+ * @return The managed upload object that can call send() or track progress.
+ */
+def upload(params: PutObjectRequest): managedupload.ManagedUpload = service.asInstanceOf[js.Dynamic].upload(params).asInstanceOf[managedupload.ManagedUpload]
+
+/**
+ * Uploads an arbitrarily sized buffer, blob, or stream, using intelligent concurrent handling of parts if the payload is large enough.
+ * You can configure the concurrent queue size by setting options.
+ * Note that this is the only operation for which the SDK can retry requests with stream bodies.
+ * @return The managed upload object that can call send() or track progress.
+ */
+def upload(params: PutObjectRequest, options: managedupload.ManagedUploadOptions): managedupload.ManagedUpload = service.asInstanceOf[js.Dynamic].upload(params, options).asInstanceOf[managedupload.ManagedUpload]
+
+/**
+ * Uploads an arbitrarily sized buffer, blob, or stream, using intelligent concurrent handling of parts if the payload is large enough.
+ * Note that this is the only operation for which the SDK can retry requests with stream bodies.
+ * @return The response data from the successful upload
+ */
+def uploadFuture(params: PutObjectRequest): Future[managedupload.SendData] = service.upload(params).sendFuture()
+
+/**
+ * Uploads an arbitrarily sized buffer, blob, or stream, using intelligent concurrent handling of parts if the payload is large enough.
+ * You can configure the concurrent queue size by setting options.
+ * Note that this is the only operation for which the SDK can retry requests with stream bodies.
+ * @return The response data from the successful upload
+ */
+def uploadFuture(params: PutObjectRequest, options: managedupload.ManagedUploadOptions): Future[managedupload.SendData] = service.upload(params, options).sendFuture()
