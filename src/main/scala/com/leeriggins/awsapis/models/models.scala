@@ -332,6 +332,7 @@ object AwsApiType {
                       documentation: Option[String],
                       description: Option[String],
                       streaming: Option[Boolean],
+                      requiresLength: Option[Boolean],
                       sensitive: Option[Boolean],
                       deprecated: Option[Boolean],
                       deprecatedMessage: Option[String]
