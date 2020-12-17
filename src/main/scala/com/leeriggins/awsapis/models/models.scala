@@ -12,6 +12,7 @@ case class Api(version: Option[String],
   // Used as Class name and file name
   val serviceClassName: String = this.metadata.serviceId.replaceAll(" ", "") match {
     // special treatment
+    case "amp"                         => "Amp"
     case "ApplicationDiscoveryService" => "ApplicationDiscovery"
     case "Budgets"                     => "BudgetsService"
     case "CostandUsageReportService"   => "CUR"
@@ -331,6 +332,7 @@ object AwsApiType {
                       documentation: Option[String],
                       description: Option[String],
                       streaming: Option[Boolean],
+                      requiresLength: Option[Boolean],
                       sensitive: Option[Boolean],
                       deprecated: Option[Boolean],
                       deprecatedMessage: Option[String]

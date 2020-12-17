@@ -411,7 +411,8 @@ object AwsApiTypeParser {
         }
 
         case JObject(fields) if (fields.hasTypeValue("blob")) => {
-          val streaming = fields.getBoolean("streaming")
+          val streaming      = fields.getBoolean("streaming")
+          val requiresLength = fields.getBoolean("requiresLength")
 
           BlobType(
             location = fields.getLocation(),
@@ -423,6 +424,7 @@ object AwsApiTypeParser {
             documentation = fields.getDocumentation(),
             description = fields.getDescription(),
             streaming = streaming,
+            requiresLength = requiresLength,
             sensitive = sensitive,
             deprecated = deprecated,
             deprecatedMessage = fields.getString("deprecatedMessage")
@@ -604,13 +606,14 @@ object AwsApiTypeParser {
       }
 
     private def parseBlobType(blob: BlobType): JObject = {
-      val streamingField    = optField("streaming", blob.streaming)
-      val sensitiveField    = optField("sensitive", blob.sensitive)
-      val eventpayloadField = optField("eventpayload", blob.eventpayload)
+      val streamingField      = optField("streaming", blob.streaming)
+      val sensitiveField      = optField("sensitive", blob.sensitive)
+      val eventpayloadField   = optField("eventpayload", blob.eventpayload)
+      val requiersLengthField = optField("requiresLength", blob.requiresLength)
       JObject(
         blob.defaultFields() ++ List(
           JField("type", JString("blob"))
-        ) ++ streamingField ++ sensitiveField ++ eventpayloadField
+        ) ++ streamingField ++ sensitiveField ++ eventpayloadField ++ requiersLengthField
       )
     }
 
