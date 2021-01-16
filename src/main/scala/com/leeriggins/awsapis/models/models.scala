@@ -207,8 +207,9 @@ object AwsApiType {
                            deprecatedMessage: Option[String],
                            xmlNamespace: Option[XmlNamespace],
                            xmlOrder: Option[List[String]],
-                           wrapper: Option[Boolean]
-  ) extends AwsApiType
+                           wrapper: Option[Boolean],
+                           box: Option[Boolean]
+  ) extends AwsApiBoxedType
 
   /** Describes an error that may be returned. Typically modeled as a structure but represented here as a separate type. */
   case class ErrorType(location: Option[String],

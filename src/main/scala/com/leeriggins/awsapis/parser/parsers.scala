@@ -300,7 +300,8 @@ object AwsApiTypeParser {
             deprecatedMessage = fields.getString("deprecatedMessage"),
             xmlNamespace = xmlNamespace,
             xmlOrder = xmlOrder,
-            wrapper = fields.getBoolean("wrapper")
+            wrapper = fields.getBoolean("wrapper"),
+            box = fields.getBoolean("box")
           )
         }
 
