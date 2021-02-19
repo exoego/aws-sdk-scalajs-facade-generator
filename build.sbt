@@ -19,5 +19,5 @@ lazy val `aws-sdk-scalajs-generator` = (project in file(".")).settings(
 
 libraryDependencies ++= Seq(
   "org.json4s"    %% "json4s-jackson" % "3.6.10",
-  "org.scalatest" %% "scalatest"      % "3.2.4" % "test"
+  "org.scalatest" %% "scalatest"      % "3.2.5" % "test"
 )
