@@ -28,7 +28,9 @@ object FieldUtils {
 
     /** Retrieve a JSON value by field name. */
     def getFieldValue(fieldName: String): Option[JValue] = {
-      fields.find { case JField(name, _) => name == fieldName }.map(_._2)
+      fields.collectFirst {
+        case JField(name, value) if name == fieldName => value
+      }
     }
 
     /** Retrieve a boolean value by field name. */
@@ -604,6 +606,8 @@ object AwsApiTypeParser {
           val opts = optField("hostLabel", string.hostLabel).toList
           JObject(string.defaultFields() ++ opts)
         }
+        case unknown =>
+          throw new UnsupportedOperationException(s"unknown type: ${unknown}")
       }
 
     private def parseBlobType(blob: BlobType): JObject = {
