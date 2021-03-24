@@ -20,6 +20,7 @@ case class Api(version: Option[String],
     case "ElasticLoadBalancing"        => "ELB"
     case "ElasticLoadBalancingv2"      => "ELBv2"
     case "ElasticsearchService"        => "ES"
+    case "fis"                         => "Fis"
     case "IoT"                         => "Iot"
     case "IoTDataPlane"                => "IotData"
     case "LexRuntimeService"           => "LexRuntime"
