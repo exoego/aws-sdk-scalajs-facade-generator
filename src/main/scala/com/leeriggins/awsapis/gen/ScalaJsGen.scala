@@ -4,14 +4,11 @@ import java.io._
 import java.nio.file.{Files, Path, Paths}
 import java.security.MessageDigest
 import java.util.stream.Collectors
-
 import scala.jdk.CollectionConverters._
-
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
 import com.leeriggins.awsapis.NonServiceClasses
-
 import Apis._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -697,31 +694,36 @@ object ScalaJsGen {
   def checkNonServices(): Unit = {
     val digester = MessageDigest.getInstance("MD5")
     val anyUpdate = NonServiceClasses.digests
-      .map { case (directoryName, lastDigest) =>
-        val dirPath = Paths.get(s"aws-sdk-js/lib", directoryName)
-        Files.newDirectoryStream(dirPath).forEach { file =>
-          digester.update(Files.readAllBytes(file))
+      .map { case (pathStr, lastDigest) =>
+        val path = Paths.get(s"aws-sdk-js/lib", pathStr)
+        if (Files.isDirectory(path)) {
+          Files.newDirectoryStream(path, "*.d.ts").forEach { file =>
+            digester.update(Files.readAllBytes(file))
+          }
+        } else {
+          digester.update(Files.readAllBytes(path))
         }
         val digest = digester.digest().map(s => "%02x".format(s)).mkString
         digester.reset()
         if (digest != lastDigest) {
-          println(s"$dirPath: ${digest} ${lastDigest}")
+          println(s"$path: ${digest} ${lastDigest}")
           true
         } else {
           false
         }
       }
       .exists(_ == true)
+
     if (anyUpdate) {
       throw new Exception("Newer version found in non-services !!")
     }
   }
 
   def main(args: Array[String]): Unit = {
-    checkNewService()
+//    checkNewService()
     checkNonServices()
-    generatePackageFile()
-    generateAWSConfigWithServicesDefault()
-    generateAllServicesTest()
+//    generatePackageFile()
+//    generateAWSConfigWithServicesDefault()
+//    generateAllServicesTest()
   }
 }
