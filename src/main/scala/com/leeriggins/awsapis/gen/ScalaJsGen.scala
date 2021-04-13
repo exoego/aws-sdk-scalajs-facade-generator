@@ -720,10 +720,10 @@ object ScalaJsGen {
   }
 
   def main(args: Array[String]): Unit = {
-//    checkNewService()
+    checkNewService()
     checkNonServices()
-//    generatePackageFile()
-//    generateAWSConfigWithServicesDefault()
-//    generateAllServicesTest()
+    generatePackageFile()
+    generateAWSConfigWithServicesDefault()
+    generateAllServicesTest()
   }
 }
