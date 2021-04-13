@@ -37,6 +37,7 @@ case class Api(version: Option[String],
     case "kendra"                      => "Kendra"
     case "kinesisvideosignaling"       => "KinesisVideoSignalingChannels"
     case "mq"                          => "MQ"
+    case "mgn"                         => "Mgn"
     case "savingsplans"                => "SavingsPlans"
     case "schemas"                     => "Schemas"
     case "signer"                      => "Signer"
