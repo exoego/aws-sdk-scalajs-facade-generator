@@ -8,20 +8,14 @@ import com.leeriggins.awsapis.gen.Naming._
 private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
   private val scalaServiceName: String = api.serviceClassName.toLowerCase
 
-  private val sourceDir  = new File(projectDir, "src/main/scala")
-  private val packageDir = new File(sourceDir, s"facade/amazonaws/services")
-
   private def lowerFirst(str: String): String = {
     str.head.toLower +: str.tail
   }
 
-  private def mkdirs(): Unit = {
-    packageDir.mkdirs()
-    ()
-  }
-
   private def gen(): Unit = {
-    mkdirs()
+    val packageDir = new File(projectDir, "src/main/scala/facade/amazonaws/services")
+    packageDir.mkdirs()
+
     val f = new File(packageDir, api.serviceClassName + ".scala")
     f.createNewFile()
 
