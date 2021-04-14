@@ -9,6 +9,7 @@ import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.parser._
 import com.leeriggins.awsapis.NonServiceClasses
+import com.leeriggins.awsapis.gen.Naming._
 import Apis._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -217,53 +218,9 @@ class ScalaJsGen(projectDir: File, api: Api) {
     IndexedSeq(doc, deprecation, jsNative).flatten.mkString("\n")
   }
 
-  private def className(awsApiType: AwsApiType): Option[String] = {
-    awsApiType match {
-      case _: StringType    => Some("String")
-      case _: LongType      => Some("Double")
-      case _: IntegerType   => Some("Int")
-      case _: FloatType     => Some("Float")
-      case _: DoubleType    => Some("Double")
-      case _: BooleanType   => Some("Boolean")
-      case _: TimestampType => Some("js.Date")
-      case _: BlobType      => Some("js.typedarray.TypedArray[_, _] | js.Array[Byte] | String")
-      case _: EnumType      => None
-      case shape: ShapeType => primitive2Scala.get(shape.shape).orElse(Some(shape.shape))
-      case map: MapType     => Some(s"js.Dictionary[${className(map.value).get}]")
-      case list: ListType   => Some(s"js.Array[${className(list.member).get}]")
-      case _                => None
-    }
-  }
-
-  private def cleanName(name: String): String = {
-    if (
-      name.exists { char =>
-        !char.isLetterOrDigit && char != '_'
-      } || !name.head.isLetter
-      || ScalaJsGen.scalaKeywords.contains(name)
-    ) {
-      "`" + name + "`"
-    } else {
-      name
-    }
-  }
-
-  private val primitive2Scala: Map[String, String] = Map(
-    "bool"    -> "Boolean",
-    "Bool"    -> "Boolean",
-    "boolean" -> "Boolean",
-    "float"   -> "Float",
-    "int"     -> "Int",
-    "integer" -> "Int",
-    "Integer" -> "Int",
-    "long"    -> "Double",
-    "Long"    -> "Double",
-    "string"  -> "String"
-  )
-
   private def genShapeTypeRef(shapeName: String, shapeType: AwsApiType): Option[String] = {
     className(shapeType).flatMap { className =>
-      if (shapeName != className && !primitive2Scala.contains(shapeName)) {
+      if (shapeName != className && !isAwsPrimitiveShape(shapeName)) {
         val deprecated = shapeType.deprecated.contains(true) match {
           case true =>
             val message = shapeType.deprecatedMessage.getOrElse("Deprecated in AWS SDK")
@@ -463,52 +420,6 @@ class ScalaJsGen(projectDir: File, api: Api) {
 }
 
 object ScalaJsGen {
-  val scalaKeywords = Set(
-    "abstract",
-    "case",
-    "catch",
-    "class",
-    "def",
-    "do",
-    "else",
-    "extends",
-    "false",
-    "final",
-    "finally",
-    "for",
-    "forSome",
-    "if",
-    "implicit",
-    "import",
-    "lazy",
-    "match",
-    "new",
-    "null",
-    "object",
-    "override",
-    "package",
-    "print",
-    "printf",
-    "println",
-    "private",
-    "protected",
-    "public",
-    "return",
-    "sealed",
-    "super",
-    "this",
-    "throw",
-    "trait",
-    "true",
-    "try",
-    "type",
-    "val",
-    "var",
-    "while",
-    "with",
-    "yield"
-  )
-
   implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
 
   def generatePackageFile(): Unit = {
