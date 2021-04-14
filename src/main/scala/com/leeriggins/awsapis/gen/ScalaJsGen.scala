@@ -766,11 +766,11 @@ object ScalaJsGen {
   }
 
   def main(args: Array[String]): Unit = {
-//    checkNewService()
-//    checkNonServices()
-//    generatePackageFile()
-//    generateAWSConfigWithServicesDefault()
-//    generateAllServicesTest()
+    checkNewService()
+    checkNonServices()
+    generatePackageFile()
+    generateAWSConfigWithServicesDefault()
+    generateAllServicesTest()
     generateAritifactsList()
   }
 }
