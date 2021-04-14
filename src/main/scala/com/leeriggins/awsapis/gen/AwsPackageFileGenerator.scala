@@ -1,35 +1,26 @@
 package com.leeriggins.awsapis.gen
 
 import java.io._
-import java.nio.file.{Files, Path, Paths}
-import java.security.MessageDigest
-import java.util.stream.Collectors
-import scala.jdk.CollectionConverters._
 import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
-import com.leeriggins.awsapis.parser._
-import com.leeriggins.awsapis.NonServiceClasses
 import com.leeriggins.awsapis.gen.Naming._
-import Apis._
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
 
-class ScalaJsGen(projectDir: File, api: Api) {
+private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
   private val scalaServiceName: String = api.serviceClassName.toLowerCase
 
-  val sourceDir  = new File(projectDir, "src/main/scala")
-  val packageDir = new File(sourceDir, s"facade/amazonaws/services")
+  private val sourceDir  = new File(projectDir, "src/main/scala")
+  private val packageDir = new File(sourceDir, s"facade/amazonaws/services")
 
   private def lowerFirst(str: String): String = {
     str.head.toLower +: str.tail
   }
 
-  def mkdirs(): Unit = {
+  private def mkdirs(): Unit = {
     packageDir.mkdirs()
     ()
   }
 
-  def gen(): Unit = {
+  private def gen(): Unit = {
     mkdirs()
     val f = new File(packageDir, api.serviceClassName + ".scala")
     f.createNewFile()
@@ -419,10 +410,9 @@ class ScalaJsGen(projectDir: File, api: Api) {
   }
 }
 
-object ScalaJsGen {
-  implicit val formats = DefaultFormats + AwsApiTypeParser.Format + InputParser.Format + OutputParser.Format
+object AwsPackageFileGenerator {
 
-  def generatePackageFile(): Unit = {
+  def generate(extractApis: Seq[Api]): Unit = {
     val projectDir = new File("../aws-sdk-scalajs-facade")
     val allDir     = new File(projectDir, "all")
     projectDir.mkdirs()
@@ -435,7 +425,7 @@ object ScalaJsGen {
     val types = extractApis
       .map { api =>
         val subDir = new File(projectDir, s"services/${api.serviceClassName.toLowerCase()}")
-        val gen    = new ScalaJsGen(subDir, api)
+        val gen    = new AwsPackageFileGenerator(subDir, api)
         gen.gen()
 
         val qualifiedName = s"services.${gen.scalaServiceName}.${api.serviceClassName}"
@@ -448,225 +438,23 @@ object ScalaJsGen {
 
     try {
       awsWriter.append(s"""package facade
-           |
-           |package object amazonaws {
-           |  implicit final class AWSExtensionMethods(private val aws: AWS.type) extends AnyVal {
-           |    def config_=(config: AWSConfig): Unit = {
-           |      aws.config = config match {
-           |        case global: AWSConfigWithServicesDefault => global
-           |        case _                                    => config.asInstanceOf[AWSConfigWithServicesDefault]
-           |      }
-           |    }
-           |
-           |${types}
-           |  }
-           |}
-         """.stripMargin.trim)
-      ()
-    } finally {
-      awsWriter.close()
-    }
-  }
-
-  private lazy val extractApis: Seq[Api] = com.leeriggins.awsapis.Apis.versions.map { case (name, version) =>
-    val text       = json(name, version, ApiType.normal)
-    val parsedText = parse(text)
-    parsedText.extract[Api]
-  }
-
-  def generateAWSConfigWithServicesDefault(): Unit = {
-    val projectDir = new File("../aws-sdk-scalajs-facade/core")
-    projectDir.mkdirs()
-    val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
-    packageRootDir.mkdirs()
-    val awsFile = new File(packageRootDir, s"AWSConfigWithServicesDefault.scala")
-    awsFile.createNewFile()
-    val awsWriter = new PrintWriter(new FileWriter(awsFile))
-
-    val types = extractApis
-      .map(_.sdkClassName.toLowerCase())
-      .sorted
-      .map { sdkClassName =>
-        val configTypeName = sdkClassName match {
-          case "s3" | "s3control" => "S3ParamsWithEndpoint"
-          case _                  => "ParamsWithEndpoint"
-        }
-        s"  var ${sdkClassName}: js.UndefOr[${configTypeName}] = js.undefined"
-      }
-      .mkString("\n")
-
-    try {
-      awsWriter.append(s"""package facade.amazonaws
-           |
-           |import scala.scalajs.js
-           |
-           |class AWSConfigWithServicesDefault extends AWSConfig {
-           |${types}
-           |}
-           |""".stripMargin.trim)
-      ()
-    } finally {
-      awsWriter.close()
-    }
-  }
-
-  def generateAllServicesTest(): Unit = {
-    val projectDir = new File("../aws-sdk-scalajs-facade/all")
-    projectDir.mkdirs()
-    val packageRootDir = new File(projectDir, s"src/test/scala/net/exoego")
-    packageRootDir.mkdirs()
-    val awsFile = new File(packageRootDir, s"AllServicesTest.scala")
-    awsFile.createNewFile()
-    val awsWriter = new PrintWriter(new FileWriter(awsFile))
-
-    val types = extractApis
-      .map(_.serviceClassName)
-      .sorted
-      .map { sdkClassName =>
-        s"""  test("${sdkClassName}") {
-           |    val instance = new services.${sdkClassName.toLowerCase}.${sdkClassName}(config)
-           |  }
-           |""".stripMargin
-      }
-      .mkString("\n")
-
-    try {
-      awsWriter.append(s"""package net.exoego
                           |
-                          |import facade.amazonaws.{AWSConfig, services}
-                          |import org.scalatest.funsuite.AnyFunSuite
-                          |
-                          |class AllServicesTest extends AnyFunSuite {
-                          |  val config = AWSConfig(
-                          |    endpoint = "http://localhost"
-                          |  )
+                          |package object amazonaws {
+                          |  implicit final class AWSExtensionMethods(private val aws: AWS.type) extends AnyVal {
+                          |    def config_=(config: AWSConfig): Unit = {
+                          |      aws.config = config match {
+                          |        case global: AWSConfigWithServicesDefault => global
+                          |        case _                                    => config.asInstanceOf[AWSConfigWithServicesDefault]
+                          |      }
+                          |    }
                           |
                           |${types}
+                          |  }
                           |}
-                          |""".stripMargin.trim)
+                        """.stripMargin.trim)
       ()
     } finally {
       awsWriter.close()
     }
-  }
-
-  def generateAritifactsList(): Unit = {
-    val awsFile   = Paths.get("../aws-sdk-scalajs-facade/ARTIFACTS.md")
-    val awsWriter = new PrintWriter(new FileWriter(awsFile.toFile))
-
-    val manuallyGeneratedService = Seq(
-      "cloudfrontsigner"
-    )
-    val types = (extractApis.map(_.serviceClassName.toLowerCase) ++ manuallyGeneratedService)
-      .map { lowerName =>
-        s"""    "net.exoego" %%% "aws-sdk-scalajs-facade-$lowerName" % awsSdkScalajsFacadeVersion,""".stripMargin
-      }
-      .sorted
-      .mkString("\n")
-
-    try {
-      awsWriter.append(s"""You can include all-in-one dependency by adding below single dependency.
-                          |```scala
-                          |libraryDependencies += "net.exoego" %%% "aws-sdk-scalajs-facade" % "VERSION(SEE README.md)"
-                          |```
-                          |This dependency contains all AWS and, also offers companion object `AWS` as same as `aws-sdk-js`.
-                          |However, this artifact is quite huge (100MB+!!).
-                          |
-                          |If you need only a few AWS (e.g. S3 and DynamoDB), you may consider to depend only minimum dependenies from the below list.
-                          |It will shorten download time and linking time (`fullOptJS`/`fastOptJS`).
-                          |
-                          |```scala
-                          |val awsSdkScalajsFacadeVersion = "VERSION(SEE README.md)"
-                          |libraryDependencies ++= Seq(
-                          |${types}
-                          |)
-                          |```
-                          |""".stripMargin.trim)
-      ()
-    } finally {
-      awsWriter.close()
-    }
-  }
-
-  def checkNewService(): Unit = {
-    val apiVersionsMap = com.leeriggins.awsapis.Apis.versions.toMap
-    val versionPattern = "^(.+)-(\\d{4}-\\d{2}-\\d{2})".r
-
-    case class NameAndVersion(name: String, version: String)
-
-    val jsonStream = Files.list(Paths.get(s"aws-sdk-js/apis")).collect(Collectors.toList[Path])
-    val servicesJsons = jsonStream.asScala
-      .flatMap { path =>
-        versionPattern.findFirstMatchIn(path.getFileName.toString).map { m =>
-          NameAndVersion(name = m.group(1), version = m.group(2))
-        }
-      }
-      .toSet
-      .groupMap[String, String](_.name)(_.version)
-
-    val newServiceKeys = (servicesJsons.keySet -- apiVersionsMap.keySet)
-    if (newServiceKeys.nonEmpty) {
-      newServiceKeys.foreach { key =>
-        val latestVersion = servicesJsons(key).max
-        println(s""" "${key}" -> "${latestVersion}",  """)
-      }
-      throw new Exception("Newly-added services found !!")
-    }
-
-    val oldVersions = servicesJsons
-      .filter { case (_, group) =>
-        group.sizeIs >= 2
-      }
-      .flatMap { case (key, versions) =>
-        val latestVersion = versions.max
-        if (latestVersion > apiVersionsMap(key)) {
-          Some(key -> latestVersion)
-        } else {
-          None
-        }
-      }
-    if (oldVersions.nonEmpty) {
-      oldVersions.foreach { case (key, latestVersion) =>
-        println(s""" "${key}" -> "${latestVersion}",  """)
-      }
-      throw new Exception("Newer version found in services !!")
-    }
-  }
-
-  def checkNonServices(): Unit = {
-    val digester = MessageDigest.getInstance("MD5")
-    val anyUpdate = NonServiceClasses.digests
-      .map { case (pathStr, lastDigest) =>
-        val path = Paths.get(s"aws-sdk-js/lib", pathStr)
-        if (Files.isDirectory(path)) {
-          Files.newDirectoryStream(path, "*.d.ts").forEach { file =>
-            digester.update(Files.readAllBytes(file))
-          }
-        } else {
-          digester.update(Files.readAllBytes(path))
-        }
-        val digest = digester.digest().map(s => "%02x".format(s)).mkString
-        digester.reset()
-        if (digest != lastDigest) {
-          println(s"$path: ${digest} ${lastDigest}")
-          true
-        } else {
-          false
-        }
-      }
-      .exists(_ == true)
-
-    if (anyUpdate) {
-      throw new Exception("Newer version found in non-services !!")
-    }
-  }
-
-  def main(args: Array[String]): Unit = {
-    checkNewService()
-    checkNonServices()
-    generatePackageFile()
-    generateAWSConfigWithServicesDefault()
-    generateAllServicesTest()
-    generateAritifactsList()
   }
 }
