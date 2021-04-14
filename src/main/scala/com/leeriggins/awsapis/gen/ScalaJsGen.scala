@@ -646,6 +646,52 @@ object ScalaJsGen {
     }
   }
 
+  def generateAritifactsList(): Unit = {
+    val awsFile   = Paths.get("../aws-sdk-scalajs-facade/ARTIFACTS.md")
+    val awsWriter = new PrintWriter(new FileWriter(awsFile.toFile))
+
+    val types = (com.leeriggins.awsapis.Apis.versions
+      .map { case (name, version) =>
+        val text       = json(name, version, ApiType.normal)
+        val parsedText = parse(text)
+        val api        = parsedText.extract[Api]
+        api.serviceClassName
+      } ++
+      // manually generated artifacts
+      Seq(
+        "cloudfrontsigner"
+      ))
+      .map { sdkClassName =>
+        val lowerName = sdkClassName.toLowerCase
+        s"""    "net.exoego" %%% "aws-sdk-scalajs-facade-$lowerName" % awsSdkScalajsFacadeVersion,""".stripMargin
+      }
+      .sorted
+      .mkString("\n")
+
+    try {
+      awsWriter.append(s"""You can include all-in-one dependency by adding below single dependency.
+                          |```scala
+                          |libraryDependencies += "net.exoego" %%% "aws-sdk-scalajs-facade" % "VERSION(SEE README.md)"
+                          |```
+                          |This dependency contains all AWS and, also offers companion object `AWS` as same as `aws-sdk-js`.
+                          |However, this artifact is quite huge (100MB+!!).
+                          |
+                          |If you need only a few AWS (e.g. S3 and DynamoDB), you may consider to depend only minimum dependenies from the below list.
+                          |It will shorten download time and linking time (`fullOptJS`/`fastOptJS`).
+                          |
+                          |```scala
+                          |val awsSdkScalajsFacadeVersion = "VERSION(SEE README.md)"
+                          |libraryDependencies ++= Seq(
+                          |${types}
+                          |)
+                          |```
+                          |""".stripMargin.trim)
+      ()
+    } finally {
+      awsWriter.close()
+    }
+  }
+
   def checkNewService(): Unit = {
     val apiVersionsMap = com.leeriggins.awsapis.Apis.versions.toMap
     val versionPattern = "^(.+)-(\\d{4}-\\d{2}-\\d{2})".r
@@ -720,10 +766,11 @@ object ScalaJsGen {
   }
 
   def main(args: Array[String]): Unit = {
-    checkNewService()
-    checkNonServices()
-    generatePackageFile()
-    generateAWSConfigWithServicesDefault()
-    generateAllServicesTest()
+//    checkNewService()
+//    checkNonServices()
+//    generatePackageFile()
+//    generateAWSConfigWithServicesDefault()
+//    generateAllServicesTest()
+    generateAritifactsList()
   }
 }
