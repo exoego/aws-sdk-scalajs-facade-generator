@@ -521,13 +521,10 @@ object ScalaJsGen {
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-    val types = com.leeriggins.awsapis.Apis.versions
-      .map { case (name, version) =>
-        val text       = json(name, version, ApiType.normal)
-        val parsedText = parse(text)
-        val api        = parsedText.extract[Api]
-        val subDir     = new File(projectDir, s"services/${api.serviceClassName.toLowerCase()}")
-        val gen        = new ScalaJsGen(subDir, api)
+    val types = extractApis
+      .map { api =>
+        val subDir = new File(projectDir, s"services/${api.serviceClassName.toLowerCase()}")
+        val gen    = new ScalaJsGen(subDir, api)
         gen.gen()
 
         val qualifiedName = s"services.${gen.scalaServiceName}.${api.serviceClassName}"
@@ -560,6 +557,12 @@ object ScalaJsGen {
     }
   }
 
+  private lazy val extractApis: Seq[Api] = com.leeriggins.awsapis.Apis.versions.map { case (name, version) =>
+    val text       = json(name, version, ApiType.normal)
+    val parsedText = parse(text)
+    parsedText.extract[Api]
+  }
+
   def generateAWSConfigWithServicesDefault(): Unit = {
     val projectDir = new File("../aws-sdk-scalajs-facade/core")
     projectDir.mkdirs()
@@ -569,13 +572,8 @@ object ScalaJsGen {
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-    val types = com.leeriggins.awsapis.Apis.versions
-      .map { case (name, version) =>
-        val text       = json(name, version, ApiType.normal)
-        val parsedText = parse(text)
-        val api        = parsedText.extract[Api]
-        api.sdkClassName.toLowerCase
-      }
+    val types = extractApis
+      .map(_.sdkClassName.toLowerCase())
       .sorted
       .map { sdkClassName =>
         val configTypeName = sdkClassName match {
@@ -610,13 +608,8 @@ object ScalaJsGen {
     awsFile.createNewFile()
     val awsWriter = new PrintWriter(new FileWriter(awsFile))
 
-    val types = com.leeriggins.awsapis.Apis.versions
-      .map { case (name, version) =>
-        val text       = json(name, version, ApiType.normal)
-        val parsedText = parse(text)
-        val api        = parsedText.extract[Api]
-        api.serviceClassName
-      }
+    val types = extractApis
+      .map(_.serviceClassName)
       .sorted
       .map { sdkClassName =>
         s"""  test("${sdkClassName}") {
@@ -650,19 +643,11 @@ object ScalaJsGen {
     val awsFile   = Paths.get("../aws-sdk-scalajs-facade/ARTIFACTS.md")
     val awsWriter = new PrintWriter(new FileWriter(awsFile.toFile))
 
-    val types = (com.leeriggins.awsapis.Apis.versions
-      .map { case (name, version) =>
-        val text       = json(name, version, ApiType.normal)
-        val parsedText = parse(text)
-        val api        = parsedText.extract[Api]
-        api.serviceClassName
-      } ++
-      // manually generated artifacts
-      Seq(
-        "cloudfrontsigner"
-      ))
-      .map { sdkClassName =>
-        val lowerName = sdkClassName.toLowerCase
+    val manuallyGeneratedService = Seq(
+      "cloudfrontsigner"
+    )
+    val types = (extractApis.map(_.serviceClassName.toLowerCase) ++ manuallyGeneratedService)
+      .map { lowerName =>
         s"""    "net.exoego" %%% "aws-sdk-scalajs-facade-$lowerName" % awsSdkScalajsFacadeVersion,""".stripMargin
       }
       .sorted
