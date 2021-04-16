@@ -7,6 +7,7 @@ import java.nio.file.Paths
 
 object ArtifactsListGenerator {
   private val manuallyGeneratedService = Seq(
+    "credentials",
     "cloudfrontsigner"
   )
 
