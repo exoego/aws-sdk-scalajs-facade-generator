@@ -4,6 +4,8 @@ package com.leeriggins.awsapis
   */
 object NonServiceClasses {
   val digests = Map(
+    "dynamodb/converter.d.ts"                              -> "63f8b3738b4ea489d797d144679247fa",
+    "s3/managed_upload.d.ts"                               -> "0774db96ea6ab521c2c0fe5a2a94232e",
     "credentials"                                          -> "068484345d4166706f0755746fce3c63",
     "credentials/chainable_temporary_credentials.d.ts"     -> "625400713394777a36b62a338d7729aa",
     "credentials/cognito_identity_credentials.d.ts"        -> "7551294d419c49e38e5c8df695d35fab",
