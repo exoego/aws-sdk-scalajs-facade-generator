@@ -153,7 +153,9 @@ abstract sealed trait AwsApiBoxedType extends AwsApiType {
   val box: Option[Boolean]
 }
 
-/** Represents a String. Can either be explicitly specified as "type": "string" or implicit by omitting any type or shape fields. */
+/** Represents a String. Can either be explicitly specified as "type": "string" or implicit by omitting any type or
+  * shape fields.
+  */
 abstract sealed trait StringType extends AwsApiBoxedType {
   val xmlAttribute: Option[Boolean]
   val streaming: Option[Boolean]
@@ -213,7 +215,8 @@ object AwsApiType {
                            box: Option[Boolean]
   ) extends AwsApiBoxedType
 
-  /** Describes an error that may be returned. Typically modeled as a structure but represented here as a separate type. */
+  /** Describes an error that may be returned. Typically modeled as a structure but represented here as a separate type.
+    */
   case class ErrorType(location: Option[String],
                        locationName: Option[String],
                        required: List[String] = List(),
