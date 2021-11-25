@@ -251,9 +251,9 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
     }
   }
 
-  private def genEnumType(enum: EnumType, name: String, typeName: String, resolvedTypes: Map[String, String]) = {
+  private def genEnumType(enumType: EnumType, name: String, typeName: String, resolvedTypes: Map[String, String]) = {
     // enums are just strings in the AWS API
-    val symbolMap = enum.symbols.map { symbol =>
+    val symbolMap = enumType.symbols.map { symbol =>
       cleanName(symbol) -> symbol
     }
     val symbolDefinitions = symbolMap.map { case (symbolName, symbol) =>
@@ -265,7 +265,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
       s"""  @inline def values = js.Array($constantNames)""".stripMargin
 
     val enumDefinition =
-      s"""${docsAndAnnotation(enum, typeName, isJsNative = false)}
+      s"""${docsAndAnnotation(enumType, typeName, isJsNative = false)}
          |@js.native
          |sealed trait ${name} extends js.Any
          |object ${name} {

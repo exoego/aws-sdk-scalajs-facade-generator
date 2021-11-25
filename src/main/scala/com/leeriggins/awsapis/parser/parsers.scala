@@ -622,14 +622,14 @@ object AwsApiTypeParser {
       )
     }
 
-    private def parseEnumType(enum: EnumType): JObject = {
-      val enumSymbols = enum.symbols.map { symbol =>
+    private def parseEnumType(enumType: EnumType): JObject = {
+      val enumSymbols = enumType.symbols.map { symbol =>
         JString(symbol)
       }
       val enumField = JField("enum", JArray(enumSymbols))
       val typeField = JField("type", JString("string"))
 
-      JObject(typeField :: enumField :: enum.defaultFields())
+      JObject(typeField :: enumField :: enumType.defaultFields())
     }
 
     private def parseListType(list: ListType): JObject = {

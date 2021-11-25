@@ -251,7 +251,7 @@ object AwsApiType {
                        queryName: Option[String],
                        union: Option[Boolean],
                        streaming: Option[Boolean],
-                       enum: Option[List[String]],
+                       `enum`: Option[List[String]],
                        tags: Option[List[String]],
                        wrapper: Option[Boolean],
                        idempotencyToken: Option[Boolean],
