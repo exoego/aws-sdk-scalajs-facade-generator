@@ -12,6 +12,7 @@ object Naming {
     "def",
     "do",
     "else",
+    "enum",
     "extends",
     "false",
     "final",
