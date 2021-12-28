@@ -63,10 +63,14 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
        |${shapeTypeRefs.toIndexedSeq.sorted.map("  " + _._2).mkString("\n")}
        |
        |${futureExtensionMethodDefinition()}
-       |$topLevelInsertion}
+       |$topLevelInsertion
        |
-       |package ${scalaServiceName} {
        |${serviceDefinition()}
+       |object ${api.serviceClassName} {
+       |  @inline implicit def toOps(service: ${api.serviceClassName}): ${api.serviceClassName}Ops = {
+       |    new ${api.serviceClassName}Ops(service)
+       |  }
+       |}
        |
        |${allTypes.toIndexedSeq.sorted
       .map { case (_, resolvedType) => resolvedType }
@@ -112,7 +116,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
       }
     } else ""
 
-    s"""  implicit final class ${api.serviceClassName}Ops(private val service: ${api.serviceClassName}) extends AnyVal {
+    s"""  final class ${api.serviceClassName}Ops(private val service: ${api.serviceClassName}) extends AnyVal {
        |
        |${operations.toIndexedSeq.sorted.mkString("\n")}
        |${opsExtension}
