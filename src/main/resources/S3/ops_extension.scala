@@ -86,7 +86,6 @@ def upload(params: PutObjectRequest, options: managedupload.ManagedUploadOptions
  * @return The response data from the successful upload
  */
 def uploadFuture(params: PutObjectRequest): Future[managedupload.SendData] = {
-  import facade.amazonaws.services.s3.managedupload.ManagedUploadOps
   service.upload(params).sendFuture()
 }
 
@@ -97,6 +96,5 @@ def uploadFuture(params: PutObjectRequest): Future[managedupload.SendData] = {
  * @return The response data from the successful upload
  */
 def uploadFuture(params: PutObjectRequest, options: managedupload.ManagedUploadOptions): Future[managedupload.SendData] = {
-  import facade.amazonaws.services.s3.managedupload.ManagedUploadOps
   service.upload(params, options).sendFuture()
 }
