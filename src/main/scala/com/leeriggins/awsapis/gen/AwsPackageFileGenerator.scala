@@ -5,6 +5,8 @@ import com.leeriggins.awsapis.models._
 import com.leeriggins.awsapis.models.AwsApiType._
 import com.leeriggins.awsapis.gen.Naming._
 
+import scala.util.Using
+
 private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
   private val scalaServiceName: String = api.serviceClassName.toLowerCase
 
@@ -13,18 +15,26 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
   }
 
   private def gen(): Unit = {
-    val packageDir = new File(projectDir, "src/main/scala/facade/amazonaws/services")
-    packageDir.mkdirs()
-
-    val f = new File(packageDir, api.serviceClassName + ".scala")
-    f.createNewFile()
-
-    val writer = new PrintWriter(new FileWriter(f))
-    try {
-      val contents = genContents()
-      writer.println(contents)
-    } finally {
-      writer.close()
+    val table: Seq[(File, String)] = Seq(
+      new File(
+        new File(projectDir, "src/main/scala/facade/amazonaws/services"),
+        api.serviceClassName + ".scala"
+      ) -> genContents(),
+      new File(
+        new File(projectDir, s"src/main/scala-2/facade/amazonaws/services/${api.serviceClassName}"),
+        "enums.scala"
+      ) -> genScala2EnumContents(),
+      new File(
+        new File(projectDir, s"src/main/scala-3/facade/amazonaws/services/${api.serviceClassName}"),
+        "enums.scala"
+      ) -> genScala3EnumContents()
+    )
+    table.foreach { case (file, contents) =>
+      file.getParentFile.mkdirs()
+      file.createNewFile()
+      Using(new PrintWriter(new FileWriter(file))) { writer =>
+        writer.println(contents)
+      }
     }
   }
 
@@ -36,6 +46,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
     }
 
     val allTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
+      case (resolvedTypes, (_, _: EnumType)) => resolvedTypes
       case (resolvedTypes, (shapeName, shapeType)) => {
         genTypesRecursive(shapeName, shapeType, resolvedTypes)
       }
@@ -81,6 +92,50 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
       }
       .mkString("\n")}
        |}""".stripMargin
+  }
+
+  private def genScala2EnumContents(): String = {
+    val enumTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
+      case (resolvedTypes, (shapeName, shapeType: EnumType)) => {
+        val typeName = className(shapeType).getOrElse(shapeName)
+        genEnumType(shapeType, shapeName, typeName, resolvedTypes)
+      }
+      case (resolvedTypes, _) => resolvedTypes
+    }
+
+    s"""package facade.amazonaws.services.${scalaServiceName}
+       |
+       |import scalajs._
+       |import scala.scalajs.js.|
+       |
+       |${enumTypes.toIndexedSeq.sorted
+      .map { case (_, resolvedType) => resolvedType }
+      .mkString("\n\n")
+      .split('\n')
+      .mkString("\n")}
+       |""".stripMargin
+  }
+
+  private def genScala3EnumContents(): String = {
+    val enumTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
+      case (resolvedTypes, (shapeName, shapeType: EnumType)) => {
+        val typeName = className(shapeType).getOrElse(shapeName)
+        genEnumType(shapeType, shapeName, typeName, resolvedTypes)
+      }
+      case (resolvedTypes, _) => resolvedTypes
+    }
+
+    s"""package facade.amazonaws.services.${scalaServiceName}
+       |
+       |import scalajs._
+       |import scala.scalajs.js.|
+       |
+       |${enumTypes.toIndexedSeq.sorted
+      .map { case (_, resolvedType) => resolvedType }
+      .mkString("\n\n")
+      .split('\n')
+      .mkString("\n")}
+       |""".stripMargin
   }
 
   private def futureExtensionMethodDefinition(): String = {
@@ -242,7 +297,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
 
         resolvedTypes
       }
-      case enum: EnumType   => genEnumType(enum, name, typeName, resolvedTypes)
+      case _: EnumType      => resolvedTypes // skip
       case error: ErrorType => genErrorType(error, typeName, resolvedTypes)
       case list: ListType   => genTypesRecursive(name + "Item", list.member, resolvedTypes)
       case map: MapType => {
