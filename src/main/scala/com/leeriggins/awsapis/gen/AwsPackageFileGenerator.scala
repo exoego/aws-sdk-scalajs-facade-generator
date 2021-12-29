@@ -98,7 +98,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
     val enumTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
       case (resolvedTypes, (shapeName, shapeType: EnumType)) => {
         val typeName = className(shapeType).getOrElse(shapeName)
-        genEnumType(shapeType, shapeName, typeName, resolvedTypes)
+        genScala2EnumType(shapeType, shapeName, typeName, resolvedTypes)
       }
       case (resolvedTypes, _) => resolvedTypes
     }
@@ -120,7 +120,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
     val enumTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
       case (resolvedTypes, (shapeName, shapeType: EnumType)) => {
         val typeName = className(shapeType).getOrElse(shapeName)
-        genEnumType(shapeType, shapeName, typeName, resolvedTypes)
+        genScala3EnumType(shapeType, shapeName, typeName, resolvedTypes)
       }
       case (resolvedTypes, _) => resolvedTypes
     }
@@ -128,7 +128,6 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
     s"""package facade.amazonaws.services.${scalaServiceName}
        |
        |import scalajs._
-       |import scala.scalajs.js.|
        |
        |${enumTypes.toIndexedSeq.sorted
       .map { case (_, resolvedType) => resolvedType }
@@ -310,7 +309,11 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
     }
   }
 
-  private def genEnumType(enumType: EnumType, name: String, typeName: String, resolvedTypes: Map[String, String]) = {
+  private def genScala2EnumType(enumType: EnumType,
+                                name: String,
+                                typeName: String,
+                                resolvedTypes: Map[String, String]
+  ) = {
     // enums are just strings in the AWS API
     val symbolMap = enumType.symbols.map { symbol =>
       cleanName(symbol) -> symbol
@@ -327,6 +330,40 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
       s"""${docsAndAnnotation(enumType, typeName, isJsNative = false)}
          |@js.native
          |sealed trait ${name} extends js.Any
+         |object ${name} {
+         |${symbolDefinitions.mkString("\n")}
+         |
+         |${valuesList}
+         |}""".stripMargin.trim
+
+    resolvedTypes + (name -> (enumDefinition))
+  }
+
+  private def genScala3EnumType(enumType: EnumType,
+                                name: String,
+                                typeName: String,
+                                resolvedTypes: Map[String, String]
+  ) = {
+    // enums are just strings in the AWS API
+    val symbolMap = enumType.symbols.map { symbol =>
+      cleanName(symbol) -> symbol
+    }
+    val symbolDefinitions = symbolMap.map { case (symbolName, symbol) =>
+      s"""  val ${symbolName}: "${symbol}" = "${symbol}""""
+    }
+
+    val constantNames = symbolMap.map { case (name, _) => name }.mkString(", ")
+    val valuesList =
+      s"""  @inline def values = js.Array[${name}]($constantNames)""".stripMargin
+
+    val constantPipedNames = enumType.symbols
+      .map { symbol =>
+        s""""${symbol}""""
+      }
+      .mkString(" | ")
+    val enumDefinition =
+      s"""${docsAndAnnotation(enumType, typeName, isJsNative = false)}
+         |type ${name} = ${constantPipedNames}
          |object ${name} {
          |${symbolDefinitions.mkString("\n")}
          |
