@@ -68,6 +68,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
        |import scalajs.js.annotation.JSImport
        |import scala.scalajs.js.|
        |import scala.concurrent.Future
+       |import scala.language.implicitConversions
        |import facade.amazonaws._
        |
        |package object ${scalaServiceName} {
