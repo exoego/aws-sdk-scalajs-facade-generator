@@ -350,12 +350,12 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
       cleanName(symbol) -> symbol
     }
     val symbolDefinitions = symbolMap.map { case (symbolName, symbol) =>
-      s"""  val ${symbolName}: "${symbol}" = "${symbol}""""
+      s"""  inline val ${symbolName}: "${symbol}" = "${symbol}""""
     }
 
     val constantNames = symbolMap.map { case (name, _) => name }.mkString(", ")
     val valuesList =
-      s"""  @inline def values = js.Array[${name}]($constantNames)""".stripMargin
+      s"""  inline def values: js.Array[${name}] = js.Array($constantNames)""".stripMargin
 
     val constantPipedNames = enumType.symbols
       .map { symbol =>
