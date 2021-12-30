@@ -1,5 +1,3 @@
-import scala.concurrent.Future
-
 /**
 * Get a pre-signed URL for a given operation name.
 *
