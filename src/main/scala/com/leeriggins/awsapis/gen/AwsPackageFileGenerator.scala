@@ -106,8 +106,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
 
     s"""package facade.amazonaws.services.${scalaServiceName}
        |
-       |import scalajs._
-       |import scala.scalajs.js.|
+       |import scalajs.js
        |
        |${enumTypes.toIndexedSeq.sorted
       .map { case (_, resolvedType) => resolvedType }
@@ -128,8 +127,8 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
 
     s"""package facade.amazonaws.services.${scalaServiceName}
        |
-       |import scalajs._
-       |
+       |import scalajs.js
+       |       |
        |${enumTypes.toIndexedSeq.sorted
       .map { case (_, resolvedType) => resolvedType }
       .mkString("\n\n")
@@ -325,7 +324,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
 
     val constantNames = symbolMap.map { case (name, _) => name }.mkString(", ")
     val valuesList =
-      s"""  @inline def values = js.Array($constantNames)""".stripMargin
+      s"""  @inline def values: js.Array[${name}] = js.Array($constantNames)""".stripMargin
 
     val enumDefinition =
       s"""${docsAndAnnotation(enumType, typeName, isJsNative = false)}
