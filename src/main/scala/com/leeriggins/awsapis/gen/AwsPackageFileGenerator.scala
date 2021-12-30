@@ -128,7 +128,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
     s"""package facade.amazonaws.services.${scalaServiceName}
        |
        |import scalajs.js
-       |       |
+       |
        |${enumTypes.toIndexedSeq.sorted
       .map { case (_, resolvedType) => resolvedType }
       .mkString("\n\n")
