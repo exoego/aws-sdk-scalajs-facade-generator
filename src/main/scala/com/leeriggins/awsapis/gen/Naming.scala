@@ -39,6 +39,7 @@ object Naming {
     "sealed",
     "super",
     "this",
+    "then",
     "throw",
     "trait",
     "true",
