@@ -255,6 +255,7 @@ object AwsApiType {
                        tags: Option[List[String]],
                        wrapper: Option[Boolean],
                        idempotencyToken: Option[Boolean],
+                       pattern: Option[String],
                        sensitive: Option[Boolean]
   ) extends AwsApiType
 

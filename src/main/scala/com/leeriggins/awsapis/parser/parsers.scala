@@ -225,6 +225,7 @@ object AwsApiTypeParser {
             xmlAttribute = fields.getBoolean("xmlAttribute"),
             tags = fields.getFieldValue("tags").map(_.extract[List[String]]),
             enum = fields.getFieldValue("enum").map(_.extract[List[String]]),
+            pattern = fields.getString("pattern"),
             queryName = fields.getString("queryName"),
             streaming = fields.getBoolean("streaming"),
             wrapper = fields.getBoolean("wrapper"),
@@ -694,6 +695,7 @@ object AwsApiTypeParser {
         optField("flattened", shape.flattened),
         optField("wrapper", shape.wrapper),
         optField("streaming", shape.streaming),
+        optField("pattern", shape.pattern),
         optField("union", shape.union),
         optField("jsonvalue", shape.jsonvalue),
         optField("idempotencyToken", shape.idempotencyToken)
