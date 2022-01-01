@@ -40,6 +40,6 @@ object ProjectsSbtGenerator {
                        |)
                        |""".stripMargin.trim)
       ()
-    }
+    }.get
   }
 }
