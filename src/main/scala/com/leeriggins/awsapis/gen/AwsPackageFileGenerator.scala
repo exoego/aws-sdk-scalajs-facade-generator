@@ -236,7 +236,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
         doc => boldText.replaceAllIn(doc, matched => s"```${matched.group(1)}```"),
         doc => headings.replaceAllIn(doc, matched => s"\n=${matched.group(1)}=\n"),
         doc => subheadings.replaceAllIn(doc, matched => s"\n==${matched.group(1)}==\n"),
-        doc => codeBlock.replaceAllIn(doc, matched => s"{{{${matched.group(1)}}}}"),
+        doc => codeBlock.replaceAllIn(doc, matched => s"{{{\n${matched.group(1)}\n}}}"),
         doc => externalLinkReference.replaceAllIn(doc, matched => s"[[${matched.group(1)}|${matched.group(2)}]]"),
         doc => seeAlso.replaceAllIn(doc, matched => s"\n@see ${matched.group(1)}"),
         doc => removeTagPattern.replaceAllIn(doc, _ => s""),
