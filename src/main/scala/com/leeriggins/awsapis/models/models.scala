@@ -44,6 +44,13 @@ case class Api(version: Option[String],
     case "codeartifact"                => "CodeArtifact"
     case "ivs"                         => "IVS"
     case "synthetics"                  => "Synthetics"
+    case "drs"                         => "DRS"
+    case "finspace"                    => "FinSpace"
+    case "finspacedata"                => "FinSpaceData"
+    case "grafana"                     => "Grafana"
+    case "nimble"                      => "Nimble"
+    case "rbin"                        => "RBin"
+    case "resiliencehub"               => "ResilienceHub"
     case otherwise                     => otherwise
   }
 
@@ -58,6 +65,11 @@ case class Api(version: Option[String],
     case "KinesisVideoSignaling"   => "KinesisVideoSignalingChannels"
     case "SESv2"                   => "SESV2"
     case "WAFv2"                   => "WAFV2"
+    case "DRS"                     => "Drs"
+    case "FinSpace"                => "Finspace"
+    case "FinSpaceData"            => "Finspacedata"
+    case "RBin"                    => "Rbin"
+    case "ResilienceHub"           => "Resiliencehub"
     case otherwise                 => otherwise
   }
 }
