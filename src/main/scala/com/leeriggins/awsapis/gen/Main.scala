@@ -19,6 +19,7 @@ object Main {
     ChangeDetector.checkNewService()
     ChangeDetector.checkNonServices()
 
+    ProjectsSbtGenerator.update(extractApis)
     AwsPackageFileGenerator.generate(extractApis)
     AWSConfigWithServicesDefaultGenerator.generate(extractApis)
     AllServicesTestGenerator.generate(extractApis)
