@@ -39,11 +39,26 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
   }
 
   private def genContents(): String = {
-    val shapeTypeRefs = api.shapes.toSeq.flatMap { case (shapeName, shapeType) =>
+    val renameAlias = new File(s"src/main/resources/${api.serviceClassName}", "rename-alias.csv")
+    val replaceMap: Map[String, String] = if (renameAlias.exists()) {
+      val source = io.Source.fromFile(renameAlias, "UTF-8")
+      val replacerSource =
+        try {
+          source.mkString
+        } finally {
+          source.close()
+        }
+      replacerSource.linesIterator.map { line =>
+        val split = line.split(',')
+        split(0) -> s"type ${split(0)} = ${split(1)}"
+      }.toMap
+    } else Map.empty
+
+    val shapeTypeRefs: Map[String, String] = api.shapes.toSeq.flatMap { case (shapeName, shapeType) =>
       genShapeTypeRef(shapeName, shapeType).map { typeRef =>
         shapeName -> typeRef
       }
-    }
+    }.toMap ++ replaceMap
 
     val allTypes = api.shapes.toIndexedSeq.sortBy(_._1).foldLeft(Map[String, String]()) {
       case (resolvedTypes, (_, _: EnumType)) => resolvedTypes
@@ -457,7 +472,10 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
       )
   }
 
-  private def genStructureType(structure: StructureType, typeName: String, resolvedTypes: Map[String, String]) = {
+  private def genStructureType(structure: StructureType,
+                               typeName: String,
+                               resolvedTypes: Map[String, String]
+  ): Map[String, String] = {
     val withMemberTypes = structure.members.fold(resolvedTypes)(_.foldLeft(resolvedTypes) {
       case (types, (memberName, memberType)) =>
         genTypesRecursive(memberName, memberType, types)
@@ -473,6 +491,15 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
          |${memberFields}
          |}""".stripMargin
         .replaceFirst(" \\{\\s+\\}", "")
+    val replaceFile = new File(s"src/main/resources/${api.serviceClassName}", s"${typeName}.replace")
+    if (replaceFile.exists()) {
+      val source = io.Source.fromFile(replaceFile, "UTF-8")
+      try {
+        return withMemberTypes + (typeName -> source.mkString)
+      } finally {
+        source.close()
+      }
+    }
     val insertFile = new File(s"src/main/resources/${api.serviceClassName}", s"${typeName}.scala")
     val insertContent = if (insertFile.exists()) {
       val source = io.Source.fromFile(insertFile, "UTF-8")

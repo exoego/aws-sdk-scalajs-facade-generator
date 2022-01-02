@@ -1,0 +1,10 @@
+BinaryAttributeValue,dynamodb.shared.BinaryAttributeValue
+BinarySetAttributeValue,dynamodb.shared.BinarySetAttributeValue
+BooleanAttributeValue,dynamodb.shared.BooleanAttributeValue
+ListAttributeValue,dynamodb.shared.ListAttributeValue
+MapAttributeValue,dynamodb.shared.MapAttributeValue
+NullAttributeValue,dynamodb.shared.NullAttributeValue
+NumberAttributeValue,dynamodb.shared.NumberAttributeValue
+NumberSetAttributeValue,dynamodb.shared.NumberSetAttributeValue
+StringAttributeValue,dynamodb.shared.StringAttributeValue
+StringSetAttributeValue,dynamodb.shared.StringSetAttributeValue

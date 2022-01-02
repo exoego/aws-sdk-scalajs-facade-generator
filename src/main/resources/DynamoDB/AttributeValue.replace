@@ -1,0 +1,4 @@
+type AttributeValue = shared.AttributeValue
+val AttributeValue = shared.AttributeValue
+type AttributeValueMapper[T] = shared.AttributeValueMapper[T]
+val AttributeValueMapper = shared.AttributeValueMapper
