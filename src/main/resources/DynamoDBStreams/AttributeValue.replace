@@ -1,0 +1,4 @@
+type AttributeValue = dynamodb.shared.AttributeValue
+val AttributeValue = dynamodb.shared.AttributeValue
+type AttributeValueMapper[T] = dynamodb.shared.AttributeValueMapper[T]
+val AttributeValueMapper = dynamodb.shared.AttributeValueMapper

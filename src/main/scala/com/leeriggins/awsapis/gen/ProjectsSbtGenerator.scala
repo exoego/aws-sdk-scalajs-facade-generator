@@ -12,7 +12,7 @@ object ProjectsSbtGenerator {
     generateScalaFile(extractApis)
   }
 
-  private val exclude = Set("DynamoDB")
+  private val exclude = Set("DynamoDB", "DynamoDBStreams")
 
   private def generateScalaFile(extractApis: Seq[Api]): Unit = {
     val projectDir = new File("../aws-sdk-scalajs-facade/")
@@ -36,6 +36,7 @@ object ProjectsSbtGenerator {
                        |lazy val subProjects: Seq[Project] = Seq(
                        |  core,
                        |  credentials,
+                       |  dynamodbShared,
                        |$projectReferences
                        |)
                        |""".stripMargin.trim)
