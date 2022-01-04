@@ -6,7 +6,7 @@ import java.io.{File, FileWriter, PrintWriter}
 
 object AllServicesTestGenerator {
   def generate(extractApis: Seq[Api]): Unit = {
-    val projectDir = new File("../aws-sdk-scalajs-facade/all")
+    val projectDir = new File("../aws-sdk-scalajs-facade/aws-sdk-v2/all")
     projectDir.mkdirs()
     val packageRootDir = new File(projectDir, s"src/test/scala/net/exoego")
     packageRootDir.mkdirs()

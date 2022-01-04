@@ -6,7 +6,7 @@ import java.io.{File, FileWriter, PrintWriter}
 
 object AWSConfigWithServicesDefaultGenerator {
   def generate(extractApis: Seq[Api]): Unit = {
-    val projectDir = new File("../aws-sdk-scalajs-facade/core")
+    val projectDir = new File("../aws-sdk-scalajs-facade/aws-sdk-v2/core")
     projectDir.mkdirs()
     val packageRootDir = new File(projectDir, s"src/main/scala/facade/amazonaws")
     packageRootDir.mkdirs()

@@ -530,7 +530,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
 object AwsPackageFileGenerator {
 
   def generate(extractApis: Seq[Api]): Unit = {
-    val projectDir = new File("../aws-sdk-scalajs-facade")
+    val projectDir = new File("../aws-sdk-scalajs-facade/aws-sdk-v2")
     val allDir     = new File(projectDir, "all")
     projectDir.mkdirs()
     val allPackageRoot = new File(allDir, s"src/main/scala/facade/amazonaws")
