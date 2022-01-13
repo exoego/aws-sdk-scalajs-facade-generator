@@ -14,7 +14,7 @@ lazy val `aws-sdk-scalajs-generator` = (project in file(".")).settings(
     "-Xfatal-warnings"
   ),
   version      := "0.0.2",
-  scalaVersion := "2.13.7"
+  scalaVersion := "2.13.8"
 )
 
 libraryDependencies ++= Seq(
