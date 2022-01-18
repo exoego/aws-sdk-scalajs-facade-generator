@@ -36,7 +36,6 @@ object ProjectsSbtGenerator {
                        |lazy val subProjects: Seq[Project] = Seq(
                        |  core,
                        |  credentials,
-                       |  dynamodbShared,
                        |$projectReferences
                        |)
                        |""".stripMargin.trim)
