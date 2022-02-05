@@ -100,13 +100,13 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
        |}
        |
        |${allTypes.toIndexedSeq.sorted
-      .map { case (_, resolvedType) => resolvedType }
-      .mkString("\n\n")
-      .split('\n')
-      .map { line =>
-        if (line.length > 0) "  " + line else line
-      }
-      .mkString("\n")}
+        .map { case (_, resolvedType) => resolvedType }
+        .mkString("\n\n")
+        .split('\n')
+        .map { line =>
+          if (line.length > 0) "  " + line else line
+        }
+        .mkString("\n")}
        |}""".stripMargin
   }
 
@@ -124,10 +124,10 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
        |import scalajs.js
        |
        |${enumTypes.toIndexedSeq.sorted
-      .map { case (_, resolvedType) => resolvedType }
-      .mkString("\n\n")
-      .split('\n')
-      .mkString("\n")}
+        .map { case (_, resolvedType) => resolvedType }
+        .mkString("\n\n")
+        .split('\n')
+        .mkString("\n")}
        |""".stripMargin
   }
 
@@ -145,10 +145,10 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
        |import scalajs.js
        |
        |${enumTypes.toIndexedSeq.sorted
-      .map { case (_, resolvedType) => resolvedType }
-      .mkString("\n\n")
-      .split('\n')
-      .mkString("\n")}
+        .map { case (_, resolvedType) => resolvedType }
+        .mkString("\n\n")
+        .split('\n')
+        .mkString("\n")}
        |""".stripMargin
   }
 
