@@ -14,10 +14,10 @@ lazy val `aws-sdk-scalajs-generator` = (project in file(".")).settings(
     "-Xfatal-warnings"
   ),
   version      := "0.0.2",
-  scalaVersion := "2.13.8"
+  scalaVersion := "2.13.10"
 )
 
 libraryDependencies ++= Seq(
-  "org.json4s"    %% "json4s-jackson" % "4.0.5",
+  "org.json4s"    %% "json4s-jackson" % "4.0.6",
   "org.scalatest" %% "scalatest"      % "3.2.13" % "test"
 )
