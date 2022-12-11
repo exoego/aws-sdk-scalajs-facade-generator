@@ -7,7 +7,9 @@ case class Api(version: Option[String],
                operations: Map[String, Operation],
                shapes: Map[String, AwsApiType],
                examples: Option[Examples],
-               authorizers: Option[Map[String, Authorizer]] = None
+               clientContextParams: Option[Map[String, ClientContextParam]],
+               xmlNamespace: Option[String],
+               authorizers: Option[Map[String, Authorizer]]
 ) {
   // Used as Class name and file name
   val serviceClassName: String = this.metadata.serviceId.replaceAll(" ", "") match {
@@ -78,6 +80,8 @@ case class Authorizer(name: String, `type`: String, placement: AuthorizerPlaceme
 
 case class AuthorizerPlacement(location: String, name: String)
 
+case class ClientContextParam(documentation: String, `type`: String)
+
 case class Examples()
 
 case class Metadata(apiVersion: String,
@@ -116,9 +120,17 @@ case class Operation(http: Option[Http],
                      name: Option[String],
                      alias: Option[String],
                      idempotent: Option[Boolean],
-                     internal: Option[Boolean]
+                     internal: Option[Boolean],
+                     httpChecksum: Option[HttpCheckSum],
+                     staticContextParams: Option[Map[String, StaticContextParam]]
 )
+case class StaticContextParam(value: Boolean)
 
+case class HttpCheckSum(requestAlgorithmMember: Option[String],
+                        requestChecksumRequired: Option[Boolean],
+                        requestValidationModeMember: Option[String],
+                        responseAlgorithms: Option[List[String]]
+)
 case class EndpointDiscovery(required: Option[Boolean])
 
 case class Endpoint(hostPrefix: Option[String])
@@ -224,7 +236,8 @@ object AwsApiType {
                            xmlNamespace: Option[XmlNamespace],
                            xmlOrder: Option[List[String]],
                            wrapper: Option[Boolean],
-                           box: Option[Boolean]
+                           box: Option[Boolean],
+                           document: Option[Boolean]
   ) extends AwsApiBoxedType
 
   /** Describes an error that may be returned. Typically modeled as a structure but represented here as a separate type.
@@ -247,6 +260,7 @@ object AwsApiType {
   /** Describes a reference to a type defined in the service's shapes. */
   case class ShapeType(location: Option[String],
                        locationName: Option[String],
+                       contextParam: Option[ContextParamType.Container],
                        hostLabel: Option[Boolean],
                        shape: String,
                        jsonvalue: Option[Boolean],
@@ -270,6 +284,21 @@ object AwsApiType {
                        pattern: Option[String],
                        sensitive: Option[Boolean]
   ) extends AwsApiType
+
+  case class ContextParamType(name: String,
+                              location: Option[String],
+                              locationName: Option[String],
+                              documentation: Option[String],
+                              hostLabel: Option[Boolean]
+  ) extends AwsApiType {
+    override val description: Option[String]       = None
+    override val sensitive: Option[Boolean]        = None
+    override val deprecated: Option[Boolean]       = None
+    override val deprecatedMessage: Option[String] = None
+  }
+  object ContextParamType {
+    case class Container(name: String)
+  }
 
   case class IntegerType(location: Option[String],
                          locationName: Option[String],
