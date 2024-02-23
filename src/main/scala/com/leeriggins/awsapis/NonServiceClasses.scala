@@ -6,11 +6,11 @@ object NonServiceClasses {
   val digests = Map(
     "dynamodb/converter.d.ts"                              -> "63f8b3738b4ea489d797d144679247fa",
     "s3/managed_upload.d.ts"                               -> "0774db96ea6ab521c2c0fe5a2a94232e",
-    "credentials"                                          -> "068484345d4166706f0755746fce3c63",
+    "credentials"                                          -> "09ecdf9e3e89a3c0dea326dd75540784",
     "credentials/chainable_temporary_credentials.d.ts"     -> "625400713394777a36b62a338d7729aa",
     "credentials/cognito_identity_credentials.d.ts"        -> "7551294d419c49e38e5c8df695d35fab",
     "credentials/credential_provider_chain.d.ts"           -> "47418be991db6d116b1c264d79f01c4b",
-    "credentials/ec2_metadata_credentials.d.ts"            -> "ef6bbdccbc6be992a3510acece9ef50e",
+    "credentials/ec2_metadata_credentials.d.ts"            -> "10c1f1d95c60407191f785d864d0b384",
     "credentials/ecs_credentials.d.ts"                     -> "e8e9f110846359c86b56f85d49d1737d",
     "credentials/environment_credentials.d.ts"             -> "f341528d9a3d561ec93df8330e27a77c",
     "credentials/file_system_credentials.d.ts"             -> "ae7b64d4b3643793f206f443f08725a5",

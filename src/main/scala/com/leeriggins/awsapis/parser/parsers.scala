@@ -212,6 +212,7 @@ object AwsApiTypeParser {
             locationName = fields.getLocationName(),
             shape = fields.getString("shape").get,
             eventpayload = fields.getBoolean("eventpayload"),
+            contextParam = fields.getFieldValue("contextParam").map(_.extract[ContextParamType.Container]),
             box = fields.getBoolean("box"),
             documentation = fields.getDocumentation(),
             description = fields.getDescription(),
@@ -234,7 +235,14 @@ object AwsApiTypeParser {
             idempotencyToken = fields.getBoolean("idempotencyToken")
           )
         }
-
+        case JObject(fields) if (fields.exists(_._1 == "contextParam")) =>
+          ContextParamType(
+            name = fields.getFieldValue("contextParam").map(_.extract[ContextParamType.Container]).get.name,
+            location = fields.getLocation(),
+            locationName = fields.getLocationName(),
+            documentation = fields.getDocumentation(),
+            hostLabel = fields.getBoolean("hostLabel")
+          )
         case JObject(fields) if (fields.hasTypeValue("map")) => {
           val keyType   = fields.getFieldValue("key").get.extract[AwsApiType]
           val valueType = fields.getFieldValue("value").get.extract[AwsApiType]
@@ -304,7 +312,8 @@ object AwsApiTypeParser {
             xmlNamespace = xmlNamespace,
             xmlOrder = xmlOrder,
             wrapper = fields.getBoolean("wrapper"),
-            box = fields.getBoolean("box")
+            box = fields.getBoolean("box"),
+            document = fields.getBoolean("document")
           )
         }
 
@@ -577,6 +586,7 @@ object AwsApiTypeParser {
         case error: ErrorType         => parseErrorType(error)
         case structure: StructureType => parseStructureType(structure)
         case shape: ShapeType         => parseShapeType(shape)
+        case cp: ContextParamType     => parseContextParamType(cp)
         case boolean: BooleanType     => JObject(boolean.defaultFields() ++ List(JField("type", JString("boolean"))))
         case integer: IntegerType     => JObject(integer.defaultFields() ++ List(JField("type", JString("integer"))))
         case long: LongType           => JObject(long.defaultFields() ++ List(JField("type", JString("long"))))
@@ -698,6 +708,7 @@ object AwsApiTypeParser {
         optField("pattern", shape.pattern),
         optField("union", shape.union),
         optField("jsonvalue", shape.jsonvalue),
+        optField("contextParam", shape.contextParam),
         optField("idempotencyToken", shape.idempotencyToken)
       ).flatten
 
@@ -730,6 +741,7 @@ object AwsApiTypeParser {
         optField("event", structure.event),
         optField("eventstream", structure.eventstream),
         optField("eventpayload", structure.eventpayload),
+        optField("document", structure.document),
         optField("union", structure.union)
       ).flatten
       val fields =
@@ -738,6 +750,15 @@ object AwsApiTypeParser {
           JString("structure")
         ) +: (requiredField ++ optFields)
       JObject(structure.defaultFields() ++ fields)
+    }
+
+    private def parseContextParamType(cp: ContextParamType): JObject = {
+      val optFields = Seq(
+        optField("hostLabel", cp.hostLabel)
+      ).flatten
+      val fields =
+        JField("contextParam", JObject(JField("name", JString(cp.name)))) +: optFields
+      JObject(cp.defaultFields() ++ fields)
     }
 
     override def isDefinedAt(value: Any): Boolean = {

@@ -320,6 +320,7 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
         withValue
       }
       case structure: StructureType => genStructureType(structure, typeName, resolvedTypes)
+      case _: ContextParamType      => genContextParamType()
       case _: ShapeType             => resolvedTypes
     }
   }
@@ -470,6 +471,10 @@ private class AwsPackageFileGenerator private (projectDir: File, api: Api) {
         !requiredFields(memberName), // required member first, optional second
         memberName                   // alphabetical
       )
+  }
+
+  private def genContextParamType(): Map[String, String] = {
+    Map.empty
   }
 
   private def genStructureType(structure: StructureType,
