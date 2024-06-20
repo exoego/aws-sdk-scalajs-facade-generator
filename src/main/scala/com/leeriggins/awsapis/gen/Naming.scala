@@ -14,6 +14,7 @@ object Naming {
     "else",
     "enum",
     "extends",
+    "export",
     "false",
     "final",
     "finally",
